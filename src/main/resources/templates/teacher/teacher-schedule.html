@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lịch dạy - Giảng viên</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" href="../../admin/admin-panel.css">
+
+    
+    <!-- JavaScript functions -->
+    <script>
+        function toggleLogoutDropdown() {
+            const dropdown = document.getElementById("logoutDropdown");
+            if (dropdown) {
+                dropdown.style.display = (dropdown.style.display === "block") ? "none" : "block";
+            }
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById("sidebar");
+            if (sidebar) {
+                sidebar.classList.toggle("show");
+            }
+        }
+    </script>
+</head>
+<body>
+<div class="wrapper">
+    <header>
+        <div class="menu-toggle" onclick="toggleSidebar()">
+            <i class="fas fa-bars"></i>
+        </div>
+        <div class="user-info">
+            <i class="fas fa-user me-2" onclick="toggleLogoutDropdown()"></i>
+            <div id="logoutDropdown" class="logout-dropdown">
+                <form th:action="@{/logout}" method="post">
+                    <button type="submit" class="btn btn-sm btn-outline-danger w-100">Logout</button>
+                </form>
+            </div>
+        </div>
+    </header>
+
+    <div class="sidebar" id="sidebar">
+        <a th:href="@{/teacher/dashboard}" class="sidebar-link home-link">
+            <i class="fas fa-home me-2"></i>Trang chủ
+        </a>
+        <a th:href="@{/teacher/profile}"><i class="fas fa-user me-2"></i>Tài khoản cá nhân</a>
+        <a th:href="@{/teacher/classes}"><i class="fas fa-chalkboard-teacher me-2"></i>Lớp đang dạy</a>
+        <a th:href="@{/teacher/grades}"><i class="fas fa-clipboard me-2"></i>Quản lý điểm</a>
+        <a th:href="@{/teacher/schedule}" class="active"><i class="fas fa-calendar-alt me-2"></i>Lịch dạy</a>
+    </div>
+
+    <div class="main-content">
+        <div class="container-fluid">
+            <h2 class="mb-4">
+                <i class="fas fa-calendar-alt me-2"></i>Lịch giảng dạy
+            </h2>
+
+            <!-- Hiển thị thông báo -->
+            <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="fas fa-check-circle me-2"></i>
+                <span th:text="${message}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                <span th:text="${error}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <div class="row">
+                <!-- Bộ lọc và điều khiển -->
+                <div class="col-md-3">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-filter me-2"></i>Bộ lọc</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="weekFilter" class="form-label">Tuần</label>
+                                <div class="btn-group w-100" role="group">
+                                    <a th:href="@{/teacher/schedules(week=${previousWeek})}" 
+                                       class="btn btn-outline-secondary btn-sm">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </a>
+                                    <button class="btn btn-outline-primary btn-sm flex-fill" disabled>
+                                        <span th:text="${#temporals.format(startOfWeek, 'dd/MM')} + ' - ' + ${#temporals.format(endOfWeek, 'dd/MM')}"></span>
+                                    </button>
+                                    <a th:href="@{/teacher/schedules(week=${nextWeek})}" 
+                                       class="btn btn-outline-secondary btn-sm">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="d-grid gap-2">
+                                <a th:href="@{/teacher/schedules}" class="btn btn-primary">
+                                    <i class="fas fa-calendar-day me-1"></i>Tuần hiện tại
+                                </a>
+                                <a th:href="@{/teacher/schedules/export}" class="btn btn-info">
+                                    <i class="fas fa-print me-1"></i>Xuất lịch
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lịch chờ xác nhận -->
+                    <div class="card mb-4" th:if="${pendingSchedules.size() > 0}">
+                        <div class="card-header">
+                            <h6 class="mb-0 text-warning">
+                                <i class="fas fa-clock me-2"></i>Chờ xác nhận 
+                                <span class="badge bg-warning" th:text="${pendingSchedules.size()}"></span>
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="list-group list-group-flush">
+                                <div class="list-group-item p-2" th:each="schedule : ${pendingSchedules}">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="small">
+                                            <strong th:text="${schedule.subject.subjectName}"></strong><br>
+                                            <small class="text-muted">
+                                                <span th:text="${schedule.classEntity.className}"></span> - 
+                                                <span th:text="${schedule.dayOfWeek == 1} ? 'CN' : 'T' + ${schedule.dayOfWeek}"></span>
+                                                <span th:text="${schedule.timeSlot.startTime}"></span>
+                                            </small>
+                                        </div>
+                                        <button class="btn btn-outline-success btn-sm" 
+                                                th:onclick="|confirmSchedule(${schedule.id})|">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Thống kê nhanh -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Thống kê tuần</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <small class="text-muted">Tổng số buổi dạy</small>
+                                <h4 class="text-primary" th:text="${weeklySchedules.size()} + ' buổi'"></h4>
+                            </div>
+                            <div class="mb-3">
+                                <small class="text-muted">Tổng số lớp</small>
+                                <h4 class="text-success" th:text="${#sets.size(#lists.toList(weeklySchedules.![classEntity]))} + ' lớp'"></h4>
+                            </div>
+                            <div class="mb-3">
+                                <small class="text-muted">Chờ xác nhận</small>
+                                <h6 class="text-warning" th:text="${pendingSchedules.size()} + ' lịch'"></h6>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lịch học theo tuần -->
+                <div class="col-md-9">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="fas fa-calendar-week me-2"></i>
+                                Lịch học tuần (<span th:text="${#temporals.format(startOfWeek, 'dd/MM')} + ' - ' + ${#temporals.format(endOfWeek, 'dd/MM/yyyy')}"></span>)
+                            </h5>
+                            <div class="btn-group" role="group">
+                                <a th:href="@{/teacher/schedules(week=${previousWeek})}" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-chevron-left"></i> Tuần trước
+                                </a>
+                                <a th:href="@{/teacher/schedules(week=${nextWeek})}" class="btn btn-outline-primary btn-sm">
+                                    Tuần sau <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-bordered mb-0" id="scheduleTable">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th style="width: 10%">Tiết</th>
+                                            <th style="width: 15%">Thứ 2</th>
+                                            <th style="width: 15%">Thứ 3</th>
+                                            <th style="width: 15%">Thứ 4</th>
+                                            <th style="width: 15%">Thứ 5</th>
+                                            <th style="width: 15%">Thứ 6</th>
+                                            <th style="width: 15%">Thứ 7</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="scheduleTableBody">
+                                        <!-- Schedule table sẽ được tạo bằng JavaScript -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Danh sách chi tiết -->
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-list me-2"></i>Chi tiết lịch dạy tuần này</h6>
+                        </div>
+                        <div class="card-body">
+                            <div th:if="${weeklySchedules.size() == 0}" class="text-center text-muted py-4">
+                                <i class="fas fa-calendar-times fa-3x mb-3"></i>
+                                <p>Không có lịch dạy nào trong tuần này</p>
+                            </div>
+                            <div th:if="${weeklySchedules.size() > 0}" class="row">
+                                <div class="col-md-6 mb-3" th:each="schedule : ${weeklySchedules}">
+                                    <div class="card border-start border-4" 
+                                         th:classappend="${schedule.status == T(com.codegym.module4casestudy.model.ScheduleStatus).PENDING} ? 'border-warning' : 
+                                                        (${schedule.status == T(com.codegym.module4casestudy.model.ScheduleStatus).CONFIRMED} ? 'border-success' : 'border-danger')">
+                                        <div class="card-body p-3">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div>
+                                                    <h6 class="card-title mb-2" th:text="${schedule.subject.subjectName}"></h6>
+                                                    <p class="card-text small mb-1">
+                                                        <i class="fas fa-chalkboard-teacher me-1"></i>
+                                                        <span th:text="${schedule.classEntity.className}"></span>
+                                                    </p>
+                                                    <p class="card-text small mb-1">
+                                                        <i class="fas fa-door-open me-1"></i>
+                                                        <span th:text="${schedule.room.roomCode}"></span>
+                                                    </p>
+                                                    <p class="card-text small mb-1">
+                                                        <i class="fas fa-clock me-1"></i>
+                                                        <span th:text="${schedule.dayOfWeek == 1} ? 'Chủ nhật' : 'Thứ ' + ${schedule.dayOfWeek}"></span>
+                                                        - <span th:text="${schedule.timeSlot.startTime} + ' - ' + ${schedule.timeSlot.endTime}"></span>
+                                                    </p>
+                                                    <p class="card-text small mb-0">
+                                                        <i class="fas fa-calendar-alt me-1"></i>
+                                                        <span th:text="${#temporals.format(schedule.startDate, 'dd/MM/yyyy')}"></span>
+                                                        <span th:if="${schedule.endDate != null}">
+                                                            đến <span th:text="${#temporals.format(schedule.endDate, 'dd/MM/yyyy')}"></span>
+                                                        </span>
+                                                    </p>
+                                                </div>
+                                                <div class="dropdown">
+                                                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" 
+                                                            type="button" data-bs-toggle="dropdown">
+                                                        <i class="fas fa-ellipsis-v"></i>
+                                                    </button>
+                                                    <ul class="dropdown-menu">
+                                                        <li><a class="dropdown-item" th:href="@{/teacher/schedules/{id}(id=${schedule.id})}">
+                                                            <i class="fas fa-eye me-2"></i>Xem chi tiết
+                                                        </a></li>
+                                                        <li th:if="${schedule.status == T(com.codegym.module4casestudy.model.ScheduleStatus).PENDING}">
+                                                            <a class="dropdown-item text-success" href="#" 
+                                                               th:onclick="|confirmSchedule(${schedule.id})|">
+                                                                <i class="fas fa-check me-2"></i>Xác nhận
+                                                            </a>
+                                                        </li>
+                                                        <li><hr class="dropdown-divider"></li>
+                                                        <li><a class="dropdown-item text-warning" href="#" 
+                                                               data-bs-toggle="modal" data-bs-target="#requestChangeModal"
+                                                               th:onclick="|setCurrentSchedule(${schedule.id})|">
+                                                            <i class="fas fa-edit me-2"></i>Yêu cầu thay đổi
+                                                        </a></li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                            <div class="mt-2">
+                                                <span class="badge" 
+                                                      th:classappend="${schedule.status == T(com.codegym.module4casestudy.model.ScheduleStatus).PENDING} ? 'bg-warning' : 
+                                                                     (${schedule.status == T(com.codegym.module4casestudy.model.ScheduleStatus).CONFIRMED} ? 'bg-success' : 'bg-danger')"
+                                                      th:text="${schedule.status == T(com.codegym.module4casestudy.model.ScheduleStatus).PENDING} ? 'Chờ xác nhận' : 
+                                                               (${schedule.status == T(com.codegym.module4casestudy.model.ScheduleStatus).CONFIRMED} ? 'Đã xác nhận' : 'Đã hủy')">
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                                        <tr>
+                                            <th style="width: 10%">Tiết</th>
+                                            <th style="width: 15%">Thứ 2</th>
+                                            <th style="width: 15%">Thứ 3</th>
+                                            <th style="width: 15%">Thứ 4</th>
+                                            <th style="width: 15%">Thứ 5</th>
+                                            <th style="width: 15%">Thứ 6</th>
+                                            <th style="width: 15%">Thứ 7</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Tiết 1 (7:00-7:45) -->
+                                        <tr>
+                                            <td class="text-center fw-bold bg-light">
+                                                Tiết 1<br>
+                                                <small>7:00-7:45</small>
+                                            </td>
+                                            <td></td>
+                                            <td class="schedule-cell bg-primary text-white">
+                                                <div class="schedule-item">
+                                                    <strong>Java Programming</strong><br>
+                                                    <small>Lớp: C0924G1</small><br>
+                                                    <small>Phòng: LAB 1</small>
+                                                </div>
+                                            </td>
+                                            <td></td>
+                                            <td class="schedule-cell bg-success text-white">
+                                                <div class="schedule-item">
+                                                    <strong>Spring Boot</strong><br>
+                                                    <small>Lớp: C0824G1</small><br>
+                                                    <small>Phòng: LAB 2</small>
+                                                </div>
+                                            </td>
+                                            <td></td>
+                                            <td></td>
+                                        </tr>
+                                        <!-- Tiết 2 (7:45-8:30) -->
+                                        <tr>
+                                            <td class="text-center fw-bold bg-light">
+                                                Tiết 2<br>
+                                                <small>7:45-8:30</small>
+                                            </td>
+                                            <td></td>
+                                            <td class="schedule-cell bg-primary text-white">
+                                                <div class="schedule-item">
+                                                    <strong>Java Programming</strong><br>
+                                                    <small>Lớp: C0924G1</small><br>
+                                                    <small>Phòng: LAB 1</small>
+                                                </div>
+                                            </td>
+                                            <td></td>
+                                            <td class="schedule-cell bg-success text-white">
+                                                <div class="schedule-item">
+                                                    <strong>Spring Boot</strong><br>
+                                                    <small>Lớp: C0824G1</small><br>
+                                                    <small>Phòng: LAB 2</small>
+                                                </div>
+                                            </td>
+                                            <td></td>
+                                            <td></td>
+                                        </tr>
+                                        <!-- Giờ nghỉ -->
+                                        <tr class="table-secondary">
+                                            <td class="text-center fw-bold">Nghỉ</td>
+                                            <td colspan="6" class="text-center text-muted">8:30 - 8:45</td>
+                                        </tr>
+                                        <!-- Tiết 3 (8:45-9:30) -->
+                                        <tr>
+                                            <td class="text-center fw-bold bg-light">
+                                                Tiết 3<br>
+                                                <small>8:45-9:30</small>
+                                            </td>
+                                            <td class="schedule-cell bg-info text-white">
+                                                <div class="schedule-item">
+                                                    <strong>Database</strong><br>
+                                                    <small>Lớp: C0724G1</small><br>
+                                                    <small>Phòng: 301</small>
+                                                </div>
+                                            </td>
+                                            <td></td>
+                                            <td class="schedule-cell bg-warning text-dark">
+                                                <div class="schedule-item">
+                                                    <strong>Web Design</strong><br>
+                                                    <small>Lớp: C0924G2</small><br>
+                                                    <small>Phòng: LAB 3</small>
+                                                </div>
+                                            </td>
+                                            <td></td>
+                                            <td class="schedule-cell bg-info text-white">
+                                                <div class="schedule-item">
+                                                    <strong>Database</strong><br>
+                                                    <small>Lớp: C0724G1</small><br>
+                                                    <small>Phòng: 301</small>
+                                                </div>
+                                            </td>
+                                            <td></td>
+                                        </tr>
+                                        <!-- Tiết 4 (9:30-10:15) -->
+                                        <tr>
+                                            <td class="text-center fw-bold bg-light">
+                                                Tiết 4<br>
+                                                <small>9:30-10:15</small>
+                                            </td>
+                                            <td class="schedule-cell bg-info text-white">
+                                                <div class="schedule-item">
+                                                    <strong>Database</strong><br>
+                                                    <small>Lớp: C0724G1</small><br>
+                                                    <small>Phòng: 301</small>
+                                                </div>
+                                            </td>
+                                            <td></td>
+                                            <td class="schedule-cell bg-warning text-dark">
+                                                <div class="schedule-item">
+                                                    <strong>Web Design</strong><br>
+                                                    <small>Lớp: C0924G2</small><br>
+                                                    <small>Phòng: LAB 3</small>
+                                                </div>
+                                            </td>
+                                            <td></td>
+                                            <td class="schedule-cell bg-info text-white">
+                                                <div class="schedule-item">
+                                                    <strong>Database</strong><br>
+                                                    <small>Lớp: C0724G1</small><br>
+                                                    <small>Phòng: 301</small>
+                                                </div>
+                                            </td>
+                                            <td></td>
+                                        </tr>
+                                        <!-- Nghỉ trưa -->
+                                        <tr class="table-warning">
+                                            <td class="text-center fw-bold">Nghỉ trưa</td>
+                                            <td colspan="6" class="text-center">10:15 - 13:30</td>
+                                        </tr>
+                                        <!-- Tiết chiều sẽ tiếp tục... -->
+                                        <tr>
+                                            <td class="text-center fw-bold bg-light">
+                                                Tiết 5<br>
+                                                <small>13:30-14:15</small>
+                                            </td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lịch hôm nay -->
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-calendar-day me-2"></i>Lịch hôm nay (15/10/2024 - Thứ 3)</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="schedule-today-item p-3 border rounded mb-3">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <h6 class="text-primary">Tiết 1-2: Java Programming</h6>
+                                                <p class="mb-1"><i class="fas fa-clock me-1"></i> 7:00 - 8:30</p>
+                                                <p class="mb-1"><i class="fas fa-chalkboard me-1"></i> Lớp: C0924G1</p>
+                                                <p class="mb-0"><i class="fas fa-map-marker-alt me-1"></i> Phòng: LAB 1</p>
+                                            </div>
+                                            <span class="badge bg-success">Sắp diễn ra</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="text-center text-muted">
+                                        <i class="fas fa-coffee fa-3x mb-3"></i>
+                                        <h6>Không có lịch học khác</h6>
+                                        <p>Bạn có thể nghỉ ngơi hoặc chuẩn bị bài giảng.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        © 2025 Hệ thống Quản lý Sinh viên. All rights reserved.
+    </footer>
+</div>
+
+<!-- Modal yêu cầu thay đổi lịch -->
+<div class="modal fade" id="requestChangeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-edit"></i> Yêu cầu thay đổi lịch
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="requestChangeForm" method="post">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Lý do yêu cầu thay đổi *</label>
+                        <textarea class="form-control" name="reason" rows="4" 
+                                  placeholder="Vui lòng mô tả lý do cần thay đổi lịch học..." required></textarea>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Lưu ý:</strong> Yêu cầu sẽ được gửi tới Admin để xem xét. 
+                        Bạn sẽ nhận được phản hồi qua email hoặc thông báo hệ thống.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Hủy
+                    </button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-paper-plane"></i> Gửi yêu cầu
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Dữ liệu lịch học từ server
+const weeklySchedules = /*[[${weeklySchedules}]]*/ [];
+const timeSlots = [
+    {id: 1, slotName: 'Tiết 1', startTime: '07:00', endTime: '07:45'},
+    {id: 2, slotName: 'Tiết 2', startTime: '07:45', endTime: '08:30'},
+    {id: 3, slotName: 'Nghỉ', startTime: '08:30', endTime: '08:45'},
+    {id: 4, slotName: 'Tiết 3', startTime: '08:45', endTime: '09:30'},
+    {id: 5, slotName: 'Tiết 4', startTime: '09:30', endTime: '10:15'},
+    {id: 6, slotName: 'Nghỉ', startTime: '10:15', endTime: '10:30'},
+    {id: 7, slotName: 'Tiết 5', startTime: '10:30', endTime: '11:15'},
+    {id: 8, slotName: 'Tiết 6', startTime: '11:15', endTime: '12:00'},
+    {id: 9, slotName: 'Nghỉ trưa', startTime: '12:00', endTime: '13:00'},
+    {id: 10, slotName: 'Tiết 7', startTime: '13:00', endTime: '13:45'},
+    {id: 11, slotName: 'Tiết 8', startTime: '13:45', endTime: '14:30'},
+    {id: 12, slotName: 'Nghỉ', startTime: '14:30', endTime: '14:45'},
+    {id: 13, slotName: 'Tiết 9', startTime: '14:45', endTime: '15:30'},
+    {id: 14, slotName: 'Tiết 10', startTime: '15:30', endTime: '16:15'}
+];
+
+let currentScheduleId = null;
+
+// Tạo bảng lịch học
+function generateScheduleTable() {
+    const tbody = document.getElementById('scheduleTableBody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    timeSlots.forEach(timeSlot => {
+        const row = document.createElement('tr');
+        
+        if (timeSlot.slotName.includes('Nghỉ')) {
+            row.className = timeSlot.slotName.includes('trưa') ? 'table-warning' : 'table-secondary';
+            row.innerHTML = `
+                <td class="text-center fw-bold">${timeSlot.slotName}</td>
+                <td colspan="6" class="text-center text-muted">${timeSlot.startTime} - ${timeSlot.endTime}</td>
+            `;
+        } else {
+            row.innerHTML = `
+                <td class="text-center fw-bold bg-light">
+                    ${timeSlot.slotName}<br>
+                    <small>${timeSlot.startTime}-${timeSlot.endTime}</small>
+                </td>
+                <td id="cell-2-${timeSlot.id}"></td>
+                <td id="cell-3-${timeSlot.id}"></td>
+                <td id="cell-4-${timeSlot.id}"></td>
+                <td id="cell-5-${timeSlot.id}"></td>
+                <td id="cell-6-${timeSlot.id}"></td>
+                <td id="cell-7-${timeSlot.id}"></td>
+            `;
+        }
+        tbody.appendChild(row);
+    });
+    
+    // Điền dữ liệu lịch học
+    weeklySchedules.forEach(schedule => {
+        const cell = document.getElementById(`cell-${schedule.dayOfWeek}-${schedule.timeSlot.id}`);
+        if (cell) {
+            const statusClass = schedule.status.toLowerCase();
+            const bgColor = getStatusColor(schedule.status);
+            
+            cell.innerHTML = `
+                <div class="schedule-item ${bgColor} text-white" style="cursor: pointer;" 
+                     onclick="viewScheduleDetail(${schedule.id})">
+                    <strong>${schedule.subject.subjectName}</strong><br>
+                    <small>Lớp: ${schedule.classEntity.className}</small><br>
+                    <small>Phòng: ${schedule.room.roomCode}</small>
+                </div>
+            `;
+        }
+    });
+}
+
+function getStatusColor(status) {
+    switch(status) {
+        case 'PENDING': return 'bg-warning text-dark';
+        case 'CONFIRMED': return 'bg-success';
+        case 'CANCELLED': return 'bg-danger';
+        default: return 'bg-secondary';
+    }
+}
+
+function viewScheduleDetail(scheduleId) {
+    window.location.href = `/teacher/schedules/${scheduleId}`;
+}
+
+function confirmSchedule(scheduleId) {
+    if (confirm('Bạn có chắc chắn muốn xác nhận lịch giảng dạy này?')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/teacher/schedules/${scheduleId}/confirm`;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+function setCurrentSchedule(scheduleId) {
+    currentScheduleId = scheduleId;
+    const form = document.getElementById('requestChangeForm');
+    form.action = `/teacher/schedules/${scheduleId}/request-change`;
+}
+
+function toggleLogoutDropdown() {
+    const dropdown = document.getElementById("logoutDropdown");
+    if (dropdown) {
+        dropdown.style.display = (dropdown.style.display === "block") ? "none" : "block";
+    }
+}
+
+function toggleSidebar() {
+    const sidebar = document.getElementById("sidebar");
+    if (sidebar) {
+        sidebar.classList.toggle("show");
+    }
+}
+
+// Khởi tạo bảng lịch khi trang load
+document.addEventListener('DOMContentLoaded', function() {
+    generateScheduleTable();
+});
+
+document.addEventListener("click", function (event) {
+    const userInfo = document.querySelector(".user-info");
+    const dropdown = document.getElementById("logoutDropdown");
+    const sidebar = document.getElementById("sidebar");
+    const toggle = document.querySelector(".menu-toggle");
+
+    if (dropdown && userInfo && !userInfo.contains(event.target)) {
+        dropdown.style.display = "none";
+    }
+
+    if (sidebar && !sidebar.contains(event.target) && !toggle.contains(event.target)) {
+        sidebar.classList.remove("show");
+    }
+});
+</script>
+
+<style>
+    .schedule-cell {
+        height: 60px;
+        vertical-align: middle;
+        padding: 5px;
+    }
+    
+    .schedule-item {
+        padding: 8px;
+        border-radius: 4px;
+        text-align: center;
+        font-size: 0.85rem;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    
+    .today-highlight {
+        background-color: #fff3cd !important;
+        border-left: 4px solid #ffc107 !important;
+    }
+    
+    @media print {
+        .card-header .btn-group,
+        .sidebar,
+        header {
+            display: none !important;
+        }
+    }
+</style>
+</body>
+</html>

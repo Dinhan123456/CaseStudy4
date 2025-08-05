@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý lịch học - Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link th:href="@{/admin/admin-panel.css}" rel="stylesheet">
+    <style>
+        .schedule-table {
+            font-size: 0.85rem;
+        }
+        .schedule-card {
+            border-left: 4px solid #007bff;
+            margin-bottom: 1rem;
+        }
+        .day-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        .time-slot {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 8px;
+            margin: 2px 0;
+            border-radius: 4px;
+        }
+        .schedule-item {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 8px;
+            margin: 2px 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .status-pending {
+            border-left: 4px solid #ffc107;
+        }
+        .status-confirmed {
+            border-left: 4px solid #28a745;
+        }
+        .status-cancelled {
+            border-left: 4px solid #dc3545;
+        }
+        .conflict-warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+        .schedule-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+        }
+        .filter-section {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div th:replace="admin/admin-panel :: navbar"></div>
+    
+    <div class="container-fluid">
+        <div class="row">
+            <div th:replace="admin/admin-panel :: sidebar"></div>
+            
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">
+                        <i class="fas fa-calendar-alt"></i> Quản lý lịch học
+                    </h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createScheduleModal">
+                            <i class="fas fa-plus"></i> Tạo lịch mới
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Thông báo -->
+                <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="fas fa-check-circle"></i> <span th:text="${message}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                
+                <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="fas fa-exclamation-triangle"></i> <span th:text="${error}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+
+                <!-- Bộ lọc -->
+                <div class="filter-section">
+                    <h5><i class="fas fa-filter"></i> Bộ lọc</h5>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label class="form-label">Giảng viên</label>
+                            <select class="form-select" id="filterTeacher">
+                                <option value="">Tất cả giảng viên</option>
+                                <option th:each="teacher : ${teachers}" 
+                                        th:value="${teacher.id}" 
+                                        th:text="${teacher.fullName}"></option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Lớp học</label>
+                            <select class="form-select" id="filterClass">
+                                <option value="">Tất cả lớp</option>
+                                <option th:each="class : ${classes}" 
+                                        th:value="${class.id}" 
+                                        th:text="${class.className}"></option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Phòng học</label>
+                            <select class="form-select" id="filterRoom">
+                                <option value="">Tất cả phòng</option>
+                                <option th:each="room : ${rooms}" 
+                                        th:value="${room.id}" 
+                                        th:text="${room.roomCode + ' - ' + room.roomName}"></option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Thứ</label>
+                            <select class="form-select" id="filterDay">
+                                <option value="">Tất cả ngày</option>
+                                <option value="2">Thứ 2</option>
+                                <option value="3">Thứ 3</option>
+                                <option value="4">Thứ 4</option>
+                                <option value="5">Thứ 5</option>
+                                <option value="6">Thứ 6</option>
+                                <option value="7">Thứ 7</option>
+                                <option value="1">Chủ nhật</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-12">
+                            <button type="button" class="btn btn-info" onclick="applyFilter()">
+                                <i class="fas fa-search"></i> Lọc
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="clearFilter()">
+                                <i class="fas fa-times"></i> Xóa bộ lọc
+                            </button>
+                            <button type="button" class="btn btn-success" onclick="toggleView()">
+                                <i class="fas fa-table"></i> <span id="viewToggleText">Xem dạng bảng</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Danh sách lịch học dạng cards (mặc định) -->
+                <div id="cardView">
+                    <h5><i class="fas fa-list"></i> Danh sách lịch học</h5>
+                    <div class="row" id="scheduleCards">
+                        <div class="col-md-6 col-lg-4" th:each="schedule : ${schedules}">
+                            <div class="card schedule-card" 
+                                 th:classappend="'status-' + ${schedule.status.toString().toLowerCase()}">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <strong th:text="${schedule.subject.subjectName}"></strong>
+                                    <span class="badge" 
+                                          th:classappend="${schedule.status == T(com.codegym.module4casestudy.model.ScheduleStatus).PENDING} ? 'bg-warning' : 
+                                                         (${schedule.status == T(com.codegym.module4casestudy.model.ScheduleStatus).CONFIRMED} ? 'bg-success' : 'bg-danger')"
+                                          th:text="${schedule.status == T(com.codegym.module4casestudy.model.ScheduleStatus).PENDING} ? 'Chờ xác nhận' : 
+                                                   (${schedule.status == T(com.codegym.module4casestudy.model.ScheduleStatus).CONFIRMED} ? 'Đã xác nhận' : 'Đã hủy')">
+                                    </span>
+                                </div>
+                                <div class="card-body">
+                                    <p class="mb-1">
+                                        <i class="fas fa-chalkboard-teacher"></i> 
+                                        <strong>Lớp:</strong> <span th:text="${schedule.classEntity.className}"></span>
+                                    </p>
+                                    <p class="mb-1">
+                                        <i class="fas fa-user"></i> 
+                                        <strong>GV:</strong> <span th:text="${schedule.teacher.fullName}"></span>
+                                    </p>
+                                    <p class="mb-1">
+                                        <i class="fas fa-door-open"></i> 
+                                        <strong>Phòng:</strong> <span th:text="${schedule.room.roomCode}"></span>
+                                    </p>
+                                    <p class="mb-1">
+                                        <i class="fas fa-calendar-day"></i> 
+                                        <strong>Thứ:</strong> 
+                                        <span th:text="${schedule.dayOfWeek == 1} ? 'Chủ nhật' : 'Thứ ' + ${schedule.dayOfWeek}"></span>
+                                    </p>
+                                    <p class="mb-1">
+                                        <i class="fas fa-clock"></i> 
+                                        <strong>Giờ:</strong> 
+                                        <span th:text="${schedule.timeSlot.startTime} + ' - ' + ${schedule.timeSlot.endTime}"></span>
+                                    </p>
+                                    <p class="mb-1">
+                                        <i class="fas fa-calendar-alt"></i> 
+                                        <strong>Từ:</strong> <span th:text="${#temporals.format(schedule.startDate, 'dd/MM/yyyy')}"></span>
+                                        <strong>Đến:</strong> <span th:text="${schedule.endDate != null ? #temporals.format(schedule.endDate, 'dd/MM/yyyy') : 'Không xác định'}"></span>
+                                    </p>
+                                </div>
+                                <div class="card-footer">
+                                    <div class="btn-group btn-group-sm w-100" role="group">
+                                        <a th:href="@{/admin/schedules/{id}(id=${schedule.id})}" 
+                                           class="btn btn-outline-info">
+                                            <i class="fas fa-eye"></i> Xem
+                                        </a>
+                                        <a th:href="@{/admin/schedules/{id}/edit(id=${schedule.id})}" 
+                                           class="btn btn-outline-warning">
+                                            <i class="fas fa-edit"></i> Sửa
+                                        </a>
+                                        <button type="button" class="btn btn-outline-success" 
+                                                th:if="${schedule.status == T(com.codegym.module4casestudy.model.ScheduleStatus).PENDING}"
+                                                th:onclick="|confirmSchedule(${schedule.id})|">
+                                            <i class="fas fa-check"></i> Xác nhận
+                                        </button>
+                                        <button type="button" class="btn btn-outline-danger" 
+                                                th:onclick="|cancelSchedule(${schedule.id})|">
+                                            <i class="fas fa-times"></i> Hủy
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lịch theo tuần dạng bảng -->
+                <div id="tableView" style="display: none;">
+                    <h5><i class="fas fa-table"></i> Lịch theo tuần</h5>
+                    <div class="table-responsive">
+                        <table class="table table-bordered schedule-table">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th width="10%">Giờ</th>
+                                    <th width="12.85%">Thứ 2</th>
+                                    <th width="12.85%">Thứ 3</th>
+                                    <th width="12.85%">Thứ 4</th>
+                                    <th width="12.85%">Thứ 5</th>
+                                    <th width="12.85%">Thứ 6</th>
+                                    <th width="12.85%">Thứ 7</th>
+                                    <th width="12.85%">Chủ nhật</th>
+                                </tr>
+                            </thead>
+                            <tbody id="scheduleTableBody">
+                                <!-- Schedule table sẽ được tạo bằng JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modal tạo lịch mới -->
+    <div class="modal fade" id="createScheduleModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-plus"></i> Tạo lịch học mới
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form th:action="@{/admin/schedules/create}" method="post" th:object="${newSchedule}">
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Lớp học *</label>
+                                    <select class="form-select" name="classId" required>
+                                        <option value="">-- Chọn lớp --</option>
+                                        <option th:each="class : ${classes}" 
+                                                th:value="${class.id}" 
+                                                th:text="${class.className}"></option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Môn học *</label>
+                                    <select class="form-select" name="subjectId" required>
+                                        <option value="">-- Chọn môn --</option>
+                                        <option th:each="subject : ${subjects}" 
+                                                th:value="${subject.id}" 
+                                                th:text="${subject.subjectName}"></option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Giảng viên *</label>
+                                    <select class="form-select" name="teacherId" required>
+                                        <option value="">-- Chọn giảng viên --</option>
+                                        <option th:each="teacher : ${teachers}" 
+                                                th:value="${teacher.id}" 
+                                                th:text="${teacher.fullName}"></option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Phòng học *</label>
+                                    <select class="form-select" name="roomId" required>
+                                        <option value="">-- Chọn phòng --</option>
+                                        <option th:each="room : ${rooms}" 
+                                                th:value="${room.id}" 
+                                                th:text="${room.roomCode + ' - ' + room.roomName + ' (SL: ' + room.capacity + ')'}"></option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Thứ trong tuần *</label>
+                                    <select class="form-select" th:field="*{dayOfWeek}" required>
+                                        <option value="">-- Chọn thứ --</option>
+                                        <option value="2">Thứ 2</option>
+                                        <option value="3">Thứ 3</option>
+                                        <option value="4">Thứ 4</option>
+                                        <option value="5">Thứ 5</option>
+                                        <option value="6">Thứ 6</option>
+                                        <option value="7">Thứ 7</option>
+                                        <option value="1">Chủ nhật</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Khung giờ *</label>
+                                    <select class="form-select" name="timeSlotId" required>
+                                        <option value="">-- Chọn giờ --</option>
+                                        <option th:each="timeSlot : ${timeSlots}" 
+                                                th:value="${timeSlot.id}" 
+                                                th:text="${timeSlot.slotName + ' (' + timeSlot.startTime + ' - ' + timeSlot.endTime + ')'}"></option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Ngày bắt đầu *</label>
+                                    <input type="date" class="form-control" th:field="*{startDate}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Ngày kết thúc</label>
+                                    <input type="date" class="form-control" th:field="*{endDate}">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Ghi chú</label>
+                            <textarea class="form-control" th:field="*{notes}" rows="3" placeholder="Ghi chú thêm về lịch học..."></textarea>
+                        </div>
+                        <div id="conflictAlert" class="alert alert-warning d-none">
+                            <i class="fas fa-exclamation-triangle"></i> 
+                            <strong>Cảnh báo:</strong> Có xung đột lịch! Vui lòng kiểm tra lại.
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times"></i> Hủy
+                        </button>
+                        <button type="button" class="btn btn-info" onclick="checkConflict()">
+                            <i class="fas fa-search"></i> Kiểm tra xung đột
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Tạo lịch
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentView = 'card';
+        
+        function toggleView() {
+            const cardView = document.getElementById('cardView');
+            const tableView = document.getElementById('tableView');
+            const toggleText = document.getElementById('viewToggleText');
+            
+            if (currentView === 'card') {
+                cardView.style.display = 'none';
+                tableView.style.display = 'block';
+                toggleText.textContent = 'Xem dạng thẻ';
+                currentView = 'table';
+                generateScheduleTable();
+            } else {
+                cardView.style.display = 'block';
+                tableView.style.display = 'none';
+                toggleText.textContent = 'Xem dạng bảng';
+                currentView = 'card';
+            }
+        }
+
+        function generateScheduleTable() {
+            // Tạo bảng lịch từ dữ liệu schedules
+            const timeSlots = /*[[${timeSlots}]]*/ [];
+            const schedules = /*[[${schedules}]]*/ [];
+            
+            const tbody = document.getElementById('scheduleTableBody');
+            tbody.innerHTML = '';
+            
+            timeSlots.forEach(timeSlot => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="time-slot"><strong>${timeSlot.slotName}</strong><br><small>${timeSlot.startTime} - ${timeSlot.endTime}</small></td>
+                    <td id="cell-2-${timeSlot.id}"></td>
+                    <td id="cell-3-${timeSlot.id}"></td>
+                    <td id="cell-4-${timeSlot.id}"></td>
+                    <td id="cell-5-${timeSlot.id}"></td>
+                    <td id="cell-6-${timeSlot.id}"></td>
+                    <td id="cell-7-${timeSlot.id}"></td>
+                    <td id="cell-1-${timeSlot.id}"></td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            // Điền lịch vào các ô
+            schedules.forEach(schedule => {
+                const cell = document.getElementById(`cell-${schedule.dayOfWeek}-${schedule.timeSlot.id}`);
+                if (cell) {
+                    const statusClass = schedule.status.toLowerCase();
+                    cell.innerHTML = `
+                        <div class="schedule-item status-${statusClass}">
+                            <strong>${schedule.subject.subjectName}</strong><br>
+                            <small>${schedule.classEntity.className}</small><br>
+                            <small>${schedule.teacher.fullName}</small><br>
+                            <small>P.${schedule.room.roomCode}</small>
+                        </div>
+                    `;
+                }
+            });
+        }
+
+        function applyFilter() {
+            const teacherId = document.getElementById('filterTeacher').value;
+            const classId = document.getElementById('filterClass').value;
+            const roomId = document.getElementById('filterRoom').value;
+            const dayOfWeek = document.getElementById('filterDay').value;
+            
+            // Gọi API lọc
+            let url = '/admin/schedules/filter?';
+            if (teacherId) url += `teacherId=${teacherId}&`;
+            if (classId) url += `classId=${classId}&`;
+            if (roomId) url += `roomId=${roomId}&`;
+            if (dayOfWeek) url += `dayOfWeek=${dayOfWeek}&`;
+            
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    updateScheduleDisplay(data);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+
+        function clearFilter() {
+            document.getElementById('filterTeacher').value = '';
+            document.getElementById('filterClass').value = '';
+            document.getElementById('filterRoom').value = '';
+            document.getElementById('filterDay').value = '';
+            location.reload();
+        }
+
+        function checkConflict() {
+            const form = document.querySelector('#createScheduleModal form');
+            const formData = new FormData(form);
+            
+            fetch('/admin/schedules/check-conflict', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.text())
+            .then(result => {
+                const alert = document.getElementById('conflictAlert');
+                if (result === 'conflict') {
+                    alert.classList.remove('d-none');
+                } else {
+                    alert.classList.add('d-none');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+
+        function confirmSchedule(scheduleId) {
+            if (confirm('Bạn có chắc chắn muốn xác nhận lịch học này?')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/admin/schedules/${scheduleId}/confirm`;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+
+        function cancelSchedule(scheduleId) {
+            if (confirm('Bạn có chắc chắn muốn hủy lịch học này?')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/admin/schedules/${scheduleId}/cancel`;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+
+        function updateScheduleDisplay(schedules) {
+            // Cập nhật hiển thị với dữ liệu mới
+            if (currentView === 'card') {
+                updateCardView(schedules);
+            } else {
+                updateTableView(schedules);
+            }
+        }
+
+        function updateCardView(schedules) {
+            const container = document.getElementById('scheduleCards');
+            container.innerHTML = '';
+            
+            schedules.forEach(schedule => {
+                // Tạo card cho mỗi schedule
+                // Code tạo card ở đây...
+            });
+        }
+
+        function updateTableView(schedules) {
+            // Reset table
+            generateScheduleTable();
+            // Fill with filtered data
+            // Code tương tự generateScheduleTable với dữ liệu mới
+        }
+    </script>
+</body>
+</html>

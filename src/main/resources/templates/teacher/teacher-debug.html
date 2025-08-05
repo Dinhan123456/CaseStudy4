@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug - Teacher</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+<div class="container mt-5">
+    <h2>Debug Information</h2>
+    
+    <div class="card mb-3">
+        <div class="card-header">
+            <h5>Authentication Info</h5>
+        </div>
+        <div class="card-body">
+            <p><strong>Auth Name:</strong> <span th:text="${authName}">null</span></p>
+            <p><strong>Auth Details:</strong> <span th:text="${authDetails}">null</span></p>
+            <p><strong>Auth Authorities:</strong> <span th:text="${authAuthorities}">null</span></p>
+        </div>
+    </div>
+    
+    <div class="card mb-3">
+        <div class="card-header">
+            <h5>Teacher Info</h5>
+        </div>
+        <div class="card-body">
+            <p><strong>Teacher:</strong> <span th:text="${teacher != null ? teacher.fullName : 'null'}">null</span></p>
+            <p><strong>Teacher ID:</strong> <span th:text="${teacher != null ? teacher.id : 'null'}">null</span></p>
+            <p><strong>Teacher Username:</strong> <span th:text="${teacher != null ? teacher.username : 'null'}">null</span></p>
+            <p><strong>Teacher Role:</strong> <span th:text="${teacher != null ? teacher.role : 'null'}">null</span></p>
+        </div>
+    </div>
+    
+    <a href="/teacher/profile" class="btn btn-primary">Go to Profile</a>
+    <a href="/teacher/dashboard" class="btn btn-secondary">Go to Dashboard</a>
+</div>
+</body>
+</html> 
