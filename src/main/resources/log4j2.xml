@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+        </Console>
+        <File name="FileAppender" fileName="logs/application.log">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+        </File>
+    </Appenders>
+    
+    <Loggers>
+        <!-- Reduce JSP/TLD scanning noise -->
+        <Logger name="org.apache.jasper.servlet.TldScanner" level="WARN" additivity="false">
+            <AppenderRef ref="Console"/>
+        </Logger>
+        
+        <!-- Reduce Spring Security debug noise -->
+        <Logger name="org.springframework.security" level="INFO" additivity="false">
+            <AppenderRef ref="Console"/>
+        </Logger>
+        
+        <!-- Reduce Hibernate noise -->
+        <Logger name="org.hibernate" level="INFO" additivity="false">
+            <AppenderRef ref="Console"/>
+        </Logger>
+        
+        <!-- Application logger -->
+        <Logger name="com.codegym.module4casestudy" level="DEBUG" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="FileAppender"/>
+        </Logger>
+        
+        <Root level="INFO">
+            <AppenderRef ref="Console"/>
+        </Root>
+    </Loggers>
+</Configuration>

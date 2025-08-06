@@ -1,0 +1,21 @@
+.fc-event {
+    cursor: pointer;
+}
+.conflict-event {
+    background-color: #f87171 !important;
+    border-color: #ef4444 !important;
+}
+.sidebar-link.active {
+    background-color: #3b82f6;
+    color: white;
+}
+.sidebar-link.active:hover {
+    background-color: #2563eb;
+}
+.time-slot {
+    transition: all 0.2s ease;
+}
+.time-slot:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
