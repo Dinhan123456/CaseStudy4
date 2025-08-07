@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chi tiết lớp học - Giảng viên</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/teacher/teacher-panel.css}">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</head>
+<body>
+<div class="wrapper">
+    <header>
+        <div class="menu-toggle" onclick="toggleSidebar()">
+            <i class="fas fa-bars"></i>
+        </div>
+        <div class="user-info">
+            <i class="fas fa-user me-2" onclick="toggleLogoutDropdown()"></i>
+            <span>Hi, Giảng viên</span>
+            <div id="logoutDropdown" class="logout-dropdown">
+                <form th:action="@{/logout}" method="post">
+                    <button type="submit" class="btn btn-sm btn-outline-danger w-100">Logout</button>
+                </form>
+            </div>
+        </div>
+    </header>
+
+    <div class="sidebar" id="sidebar">
+        <a th:href="@{/teacher/dashboard}" class="sidebar-link home-link">
+            <i class="fas fa-home me-2"></i>Trang chủ
+        </a>
+        <a th:href="@{/teacher/profile}"><i class="fas fa-user me-2"></i>Tài khoản cá nhân</a>
+        <a th:href="@{/teacher/classes}" class="active"><i class="fas fa-chalkboard-teacher me-2"></i>Lớp đang dạy</a>
+        <a th:href="@{/teacher/grades}"><i class="fas fa-clipboard me-2"></i>Quản lý điểm</a>
+        <a th:href="@{/teacher/schedule}"><i class="fas fa-calendar-alt me-2"></i>Lịch dạy</a>
+    </div>
+
+    <div class="main-content">
+        <div class="container">
+            <!-- Breadcrumb -->
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a th:href="@{/teacher/dashboard}">Trang chủ</a></li>
+                    <li class="breadcrumb-item"><a th:href="@{/teacher/classes}">Lớp đang dạy</a></li>
+                    <li class="breadcrumb-item active" th:text="${class.name}">Chi tiết lớp</li>
+                </ol>
+            </nav>
+
+            <h2 class="mb-4">
+                <i class="fas fa-chalkboard me-2"></i>Chi tiết lớp học: <span th:text="${class.name}">Tên lớp</span>
+            </h2>
+
+            <!-- Hiển thị thông báo -->
+            <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="fas fa-check-circle me-2"></i>
+                <span th:text="${message}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                <span th:text="${error}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <div class="row">
+                <!-- Thông tin lớp học -->
+                <div class="col-md-4">
+                    <div class="card mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Thông tin lớp học</h5>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><i class="fas fa-tag me-2"></i><strong>Tên lớp:</strong></td>
+                                    <td th:text="${class.name}">Tên lớp</td>
+                                </tr>
+                                <tr>
+                                    <td><i class="fas fa-book me-2"></i><strong>Môn học:</strong></td>
+                                    <td th:text="${class.subject?.name ?: 'Chưa xác định'}">Môn học</td>
+                                </tr>
+                                <tr>
+                                    <td><i class="fas fa-users me-2"></i><strong>Số sinh viên:</strong></td>
+                                    <td><span class="badge bg-info" th:text="${class.students?.size() ?: 0}">0</span></td>
+                                </tr>
+                                <tr>
+                                    <td><i class="fas fa-calendar me-2"></i><strong>Thời gian:</strong></td>
+                                    <td th:text="${class.schedule ?: 'Chưa xác định'}">Chưa xác định</td>
+                                </tr>
+                                <tr>
+                                    <td><i class="fas fa-map-marker-alt me-2"></i><strong>Phòng học:</strong></td>
+                                    <td th:text="${class.room ?: 'Chưa xác định'}">Chưa xác định</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Hành động nhanh -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-bolt me-2"></i>Hành động nhanh</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-grid gap-2">
+                                <a th:href="@{/teacher/grades?classId={id}(id=${class.id})}" class="btn btn-success">
+                                    <i class="fas fa-clipboard me-2"></i>Quản lý điểm số
+                                </a>
+                                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#attendanceModal">
+                                    <i class="fas fa-check-square me-2"></i>Điểm danh
+                                </button>
+                                <a th:href="@{/teacher/schedule?classId={id}(id=${class.id})}" class="btn btn-info">
+                                    <i class="fas fa-calendar-alt me-2"></i>Xem lịch học
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Danh sách sinh viên -->
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="fas fa-users me-2"></i>Danh sách sinh viên</h5>
+                            <div>
+                                <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#addStudentModal">
+                                    <i class="fas fa-plus me-1"></i>Thêm sinh viên
+                                </button>
+                                <button class="btn btn-info btn-sm" onclick="exportStudentList()">
+                                    <i class="fas fa-download me-1"></i>Xuất danh sách
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>STT</th>
+                                            <th>Mã SV</th>
+                                            <th>Họ và tên</th>
+                                            <th>Email</th>
+                                            <th>Số điện thoại</th>
+                                            <th>Hành động</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Tạm thời hiển thị thông báo chưa có sinh viên -->
+                                        <tr>
+                                            <td colspan="6" class="text-center text-muted py-4">
+                                                <i class="fas fa-user-graduate fa-2x mb-2"></i><br>
+                                                Chưa có sinh viên nào trong lớp này.<br>
+                                                <small>Sử dụng nút "Thêm sinh viên" để thêm sinh viên vào lớp.</small>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        © 2025 Hệ thống Quản lý Sinh viên. All rights reserved.
+    </footer>
+</div>
+
+<!-- Modal thêm sinh viên -->
+<div class="modal fade" id="addStudentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-plus me-2"></i>Thêm sinh viên vào lớp</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted">Tính năng đang phát triển. Vui lòng liên hệ quản trị viên để thêm sinh viên vào lớp.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal điểm danh -->
+<div class="modal fade" id="attendanceModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-check-square me-2"></i>Điểm danh</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted">Tính năng điểm danh đang phát triển.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleLogoutDropdown() {
+        const dropdown = document.getElementById("logoutDropdown");
+        if (dropdown) {
+            dropdown.style.display = (dropdown.style.display === "block") ? "none" : "block";
+        }
+    }
+
+    function toggleSidebar() {
+        const sidebar = document.getElementById("sidebar");
+        if (sidebar) {
+            sidebar.classList.toggle("show");
+        }
+    }
+
+    function exportStudentList() {
+        alert("Tính năng xuất danh sách đang phát triển!");
+    }
+
+    document.addEventListener("click", function (event) {
+        const userInfo = document.querySelector(".user-info");
+        const dropdown = document.getElementById("logoutDropdown");
+        const sidebar = document.getElementById("sidebar");
+        const toggle = document.querySelector(".menu-toggle");
+
+        if (dropdown && userInfo && !userInfo.contains(event.target)) {
+            dropdown.style.display = "none";
+        }
+
+        if (sidebar && !sidebar.contains(event.target) && !toggle.contains(event.target)) {
+            sidebar.classList.remove("show");
+        }
+    });
+</script>
+</body>
+</html>

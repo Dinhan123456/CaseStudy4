@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lớp học của tôi - Sinh viên</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/student/student-panel.css}">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</head>
+<body>
+<div class="wrapper">
+    <header>
+        <div class="menu-toggle" onclick="toggleSidebar()">
+            <i class="fas fa-bars"></i>
+        </div>
+        <div class="user-info">
+            <i class="fas fa-user me-2" onclick="toggleLogoutDropdown()"></i>
+            <span>Hi, <span th:text="${student != null ? student.fullName : 'Sinh viên'}">Sinh viên</span></span>
+            <div id="logoutDropdown" class="logout-dropdown">
+                <form th:action="@{/logout}" method="post">
+                    <button type="submit" class="btn btn-sm btn-outline-danger w-100">Logout</button>
+                </form>
+            </div>
+        </div>
+    </header>
+
+    <div class="sidebar" id="sidebar">
+        <a th:href="@{/student/dashboard}" class="sidebar-link home-link">
+            <i class="fas fa-home me-2"></i>Trang chủ
+        </a>
+        <a th:href="@{/student/profile}"><i class="fas fa-user me-2"></i>Tài khoản cá nhân</a>
+        <a th:href="@{/student/classes}" class="active"><i class="fas fa-chalkboard me-2"></i>Lớp học của tôi</a>
+        <a th:href="@{/student/grades}"><i class="fas fa-graduation-cap me-2"></i>Điểm số</a>
+        <a th:href="@{/schedule}" class="text-muted"><i class="fas fa-calendar-alt me-2"></i>Lịch học </a>
+    </div>
+
+    <div class="main-content">
+        <div class="container">
+            <h2 class="mb-4">
+                <i class="fas fa-chalkboard me-2"></i>Lớp học của tôi
+            </h2>
+
+            <!-- Hiển thị thông báo -->
+            <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="fas fa-check-circle me-2"></i>
+                <span th:text="${message}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                <span th:text="${error}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <!-- Tab Navigation -->
+            <ul class="nav nav-tabs mb-4" id="classTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="my-classes-tab" data-bs-toggle="tab" data-bs-target="#my-classes" type="button" role="tab">
+                        <i class="fas fa-chalkboard me-2"></i>Lớp đang học
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="available-classes-tab" data-bs-toggle="tab" data-bs-target="#available-classes" type="button" role="tab">
+                        <i class="fas fa-plus-circle me-2"></i>Đăng ký lớp mới
+                    </button>
+                </li>
+            </ul>
+
+            <!-- Tab Content -->
+            <div class="tab-content" id="classTabContent">
+                <!-- Lớp đang học -->
+                <div class="tab-pane fade show active" id="my-classes" role="tabpanel">
+                    <div class="row mb-3">
+                        <div class="col-md-8">
+                            <h4><i class="fas fa-list me-2"></i>Danh sách lớp đang học</h4>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <button class="btn btn-info btn-sm" onclick="exportClassList()">
+                                <i class="fas fa-download me-1"></i>Xuất danh sách
+                            </button>
+                        </div>
+                    </div>
+
+                    <div th:if="${#lists.isEmpty(studentClasses)}" class="text-center py-5">
+                        <i class="fas fa-chalkboard fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Chưa đăng ký lớp học nào</h5>
+                        <p class="text-muted">Hãy chuyển sang tab "Đăng ký lớp mới" để đăng ký lớp học.</p>
+                        <button class="btn btn-primary" onclick="document.getElementById('available-classes-tab').click()">
+                            <i class="fas fa-plus me-1"></i>Đăng ký lớp học
+                        </button>
+                    </div>
+
+                    <div th:if="${!#lists.isEmpty(studentClasses)}" class="row">
+                        <div th:each="class : ${studentClasses}" class="col-lg-6 mb-4">
+                            <div class="card h-100 shadow-sm border-start border-primary border-4">
+                                <div class="card-header bg-light">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-0 text-primary" th:text="${class.name}">Tên lớp</h6>
+                                        <span class="badge bg-success">Đang học</span>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <p class="card-text mb-2">
+                                        <i class="fas fa-book me-2 text-info"></i>
+                                        <strong>Môn học:</strong> <span th:text="${class.subject?.name ?: 'Chưa xác định'}">Môn học</span>
+                                    </p>
+                                    <p class="card-text mb-2">
+                                        <i class="fas fa-user-tie me-2 text-warning"></i>
+                                        <strong>Giảng viên:</strong> <span th:text="${class.teacher?.fullName ?: 'Chưa phân công'}">Giảng viên</span>
+                                    </p>
+                                    <p class="card-text mb-2">
+                                        <i class="fas fa-clock me-2 text-success"></i>
+                                        <strong>Thời gian:</strong> <span th:text="${class.schedule ?: 'Chưa xác định'}">Lịch học</span>
+                                    </p>
+                                    <p class="card-text mb-2">
+                                        <i class="fas fa-map-marker-alt me-2 text-danger"></i>
+                                        <strong>Phòng học:</strong> <span th:text="${class.room ?: 'Chưa xác định'}">Phòng</span>
+                                    </p>
+                                    <p class="card-text mb-0">
+                                        <i class="fas fa-users me-2 text-secondary"></i>
+                                        <strong>Sinh viên:</strong> <span th:text="${class.students?.size() ?: 0}">0</span> người
+                                    </p>
+                                </div>
+                                <div class="card-footer bg-white">
+                                    <div class="d-flex gap-2">
+                                        <a th:href="@{/student/classes/{id}(id=${class.id})}"
+                                           class="btn btn-primary btn-sm flex-fill">
+                                            <i class="fas fa-eye me-1"></i>Chi tiết
+                                        </a>
+                                        <a th:href="@{/student/grades?classId={id}(id=${class.id})}"
+                                           class="btn btn-success btn-sm flex-fill">
+                                            <i class="fas fa-chart-bar me-1"></i>Xem điểm
+                                        </a>
+                                        <button class="btn btn-outline-danger btn-sm"
+                                                onclick="confirmUnregister([[${class.id}]], '[[${class.name}]]')">
+                                            <i class="fas fa-times me-1"></i>Hủy đăng ký
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Đăng ký lớp mới -->
+                <div class="tab-pane fade" id="available-classes" role="tabpanel">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <h4><i class="fas fa-plus-circle me-2"></i>Lớp có thể đăng ký</h4>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="searchClasses"
+                                       placeholder="Tìm kiếm lớp học..." onkeyup="searchClasses()">
+                                <button class="btn btn-outline-secondary" type="button">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div th:if="${#lists.isEmpty(availableClasses)}" class="text-center py-5">
+                        <i class="fas fa-exclamation-circle fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Không có lớp học nào khả dụng</h5>
+                        <p class="text-muted">Vui lòng liên hệ phòng đào tạo để biết thêm thông tin.</p>
+                    </div>
+
+                    <div th:if="${!#lists.isEmpty(availableClasses)}" class="row">
+                        <div th:each="class : ${availableClasses}" class="col-lg-6 mb-4">
+                            <div class="card h-100 shadow-sm border-start border-success border-4">
+                                <div class="card-header bg-light">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-0 text-success" th:text="${class.name}">Tên lớp</h6>
+                                        <span class="badge bg-light text-dark">Có thể đăng ký</span>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <p class="card-text mb-2">
+                                        <i class="fas fa-book me-2 text-info"></i>
+                                        <strong>Môn học:</strong> <span th:text="${class.subject?.name ?: 'Chưa xác định'}">Môn học</span>
+                                    </p>
+                                    <p class="card-text mb-2">
+                                        <i class="fas fa-star me-2 text-warning"></i>
+                                        <strong>Tín chỉ:</strong> <span th:text="${class.subject?.credits ?: 0}">0</span>
+                                    </p>
+                                    <p class="card-text mb-2">
+                                        <i class="fas fa-user-tie me-2 text-warning"></i>
+                                        <strong>Giảng viên:</strong> <span th:text="${class.teacher?.fullName ?: 'Chưa phân công'}">Giảng viên</span>
+                                    </p>
+                                    <p class="card-text mb-2">
+                                        <i class="fas fa-clock me-2 text-success"></i>
+                                        <strong>Thời gian:</strong> <span th:text="${class.schedule ?: 'Chưa xác định'}">Lịch học</span>
+                                    </p>
+                                    <p class="card-text mb-0">
+                                        <i class="fas fa-users me-2 text-secondary"></i>
+                                        <strong>Chỗ trống:</strong>
+                                        <span class="badge bg-info">
+                                            <span th:text="${40 - (class.students?.size() ?: 0)}">40</span> / 40
+                                        </span>
+                                    </p>
+                                </div>
+                                <div class="card-footer bg-white">
+                                    <div class="d-flex gap-2">
+                                        <button class="btn btn-outline-info btn-sm flex-fill"
+                                                onclick="viewClassInfo([[${class.id}]])">
+                                            <i class="fas fa-info-circle me-1"></i>Thông tin
+                                        </button>
+                                        <button class="btn btn-success btn-sm flex-fill"
+                                                onclick="confirmRegister([[${class.id}]], '[[${class.name}]]')">
+                                            <i class="fas fa-plus me-1"></i>Đăng ký
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        © 2025 Hệ thống Quản lý Sinh viên. All rights reserved.
+    </footer>
+</div>
+
+<!-- Modal xác nhận đăng ký -->
+<div class="modal fade" id="registerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-plus-circle me-2"></i>Xác nhận đăng ký</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Bạn có chắc muốn đăng ký lớp <strong id="registerClassName"></strong>?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-success" onclick="registerClass()">Đăng ký</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal xác nhận hủy đăng ký -->
+<div class="modal fade" id="unregisterModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle me-2 text-warning"></i>Xác nhận hủy đăng ký</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Bạn có chắc muốn hủy đăng ký lớp <strong id="unregisterClassName"></strong>?</p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Hành động này không thể hoàn tác!
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-danger" onclick="unregisterClass()">Xác nhận hủy đăng ký</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let selectedClassId = null;
+
+    function toggleLogoutDropdown() {
+        const dropdown = document.getElementById("logoutDropdown");
+        if (dropdown) {
+            dropdown.style.display = (dropdown.style.display === "block") ? "none" : "block";
+        }
+    }
+
+    function toggleSidebar() {
+        const sidebar = document.getElementById("sidebar");
+        if (sidebar) {
+            sidebar.classList.toggle("show");
+        }
+    }
+
+    function searchClasses() {
+        const keyword = document.getElementById('searchClasses').value.toLowerCase();
+        const cards = document.querySelectorAll('#available-classes .card');
+
+        cards.forEach(card => {
+            const className = card.querySelector('.card-header h6').textContent.toLowerCase();
+            const subjectName = card.querySelector('.card-body').textContent.toLowerCase();
+
+            if (className.includes(keyword) || subjectName.includes(keyword)) {
+                card.closest('.col-lg-6').style.display = 'block';
+            } else {
+                card.closest('.col-lg-6').style.display = 'none';
+            }
+        });
+    }
+
+    function confirmRegister(classId, className) {
+        selectedClassId = classId;
+        document.getElementById('registerClassName').textContent = className;
+        const modal = new bootstrap.Modal(document.getElementById('registerModal'));
+        modal.show();
+    }
+
+    function registerClass() {
+        if (selectedClassId) {
+            // Tạo form và submit
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/student/classes/${selectedClassId}/register`;
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+
+    function confirmUnregister(classId, className) {
+        selectedClassId = classId;
+        document.getElementById('unregisterClassName').textContent = className;
+        const modal = new bootstrap.Modal(document.getElementById('unregisterModal'));
+        modal.show();
+    }
+
+    function unregisterClass() {
+        if (selectedClassId) {
+            // Tạo form và submit
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/student/classes/${selectedClassId}/unregister`;
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+
+    function viewClassInfo(classId) {
+        window.location.href = `/student/classes/${classId}`;
+    }
+
+    function exportClassList() {
+        alert("Tính năng xuất danh sách đang phát triển!");
+    }
+
+    document.addEventListener("click", function (event) {
+        const userInfo = document.querySelector(".user-info");
+        const dropdown = document.getElementById("logoutDropdown");
+        const sidebar = document.getElementById("sidebar");
+        const toggle = document.querySelector(".menu-toggle");
+
+        if (dropdown && userInfo && !userInfo.contains(event.target)) {
+            dropdown.style.display = "none";
+        }
+
+        if (sidebar && !sidebar.contains(event.target) && !toggle.contains(event.target)) {
+            sidebar.classList.remove("show");
+        }
+    });
+
+
+</script>
+</body>
+</html>

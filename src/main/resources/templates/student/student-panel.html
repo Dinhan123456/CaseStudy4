@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cổng Sinh Viên</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/student/student-panel.css}">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</head>
+<body>
+<div class="wrapper">
+
+    <header>
+        <div class="menu-toggle" onclick="toggleSidebar()">
+            <i class="fas fa-bars"></i>
+        </div>
+        <div class="user-info">
+            <i class="fas fa-user me-2" onclick="toggleLogoutDropdown()"></i>
+            <span>Hi, <span th:text="${student != null ? student.fullName : 'Sinh viên'}">Sinh viên</span></span>
+            <div id="logoutDropdown" class="logout-dropdown">
+                <form th:action="@{/logout}" method="post">
+                    <button type="submit" class="btn btn-sm btn-outline-danger w-100">Đăng xuất</button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Debug info in header -->
+        <div style="position: absolute; top: 60px; right: 20px; background: yellow; padding: 10px; border: 1px solid red; z-index: 1001;">
+            <strong>DEBUG:</strong><br>
+            Student: <span th:text="${student != null ? student.fullName : 'null'}">null</span><br>
+            Total Classes: <span th:text="${totalClasses != null ? totalClasses : 'null'}">null</span><br>
+            Recent Classes: <span th:text="${recentClasses != null ? recentClasses.size() : 'null'}">null</span><br>
+            Error: <span th:text="${error != null ? error : 'none'}">none</span>
+        </div>
+    </header>
+
+    <div class="sidebar" id="sidebar">
+        <a th:href="@{/student/dashboard}" class="sidebar-link home-link active">
+            <i class="fas fa-home me-2"></i>Trang chủ
+        </a>
+        <a th:href="@{/student/profile}"><i class="fas fa-user me-2"></i>Tài khoản cá nhân</a>
+        <a th:href="@{/student/classes}"><i class="fas fa-chalkboard me-2"></i>Lớp học của tôi</a>
+        <a th:href="@{/student/grades}"><i class="fas fa-graduation-cap me-2"></i>Điểm số</a>
+        <a href="#" onclick="showComingSoon('Lịch học')" class="text-muted"><i class="fas fa-calendar-alt me-2"></i>Lịch học <span class="badge bg-danger ms-1 small">Sắp có</span></a>
+    </div>
+    <div class="main-content">
+        <div class="container">
+            <h2 class="mb-4">
+                <i class="fas fa-graduation-cap me-2"></i>Chào mừng, <span th:text="${student != null ? student.fullName : 'Sinh viên'}">Sinh viên</span>
+            </h2>
+
+            <!-- Hiển thị thông báo -->
+            <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="fas fa-check-circle me-2"></i>
+                <span th:text="${message}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                <span th:text="${error}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            
+
+            <!-- Thống kê nhanh -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6>Lớp đang học</h6>
+                                    <h3 th:text="${totalClasses != null ? totalClasses : 0}">0</h3>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-chalkboard fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6>Điểm TB học kỳ</h6>
+                                    <h3>8.2</h3>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-chart-line fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6>Tín chỉ tích lũy</h6>
+                                    <h3>45</h3>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-medal fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6>Học kỳ hiện tại</h6>
+                                    <h3>2024-2025</h3>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-calendar fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Menu chức năng chính -->
+            <h4 class="mb-3"><i class="fas fa-th-large me-2"></i>Chức năng chính</h4>
+            <div class="row">
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <a th:href="@{/student/profile}" class="text-decoration-none">
+                        <div class="card h-100 shadow-sm hover-card">
+                            <div class="card-body text-center">
+                                <div class="feature-icon bg-primary text-white rounded-circle mx-auto mb-3">
+                                    <i class="fas fa-user-edit fa-2x"></i>
+                                </div>
+                                <h5 class="card-title">Tài khoản cá nhân</h5>
+                                <p class="card-text text-muted">Cập nhật thông tin cá nhân, đổi mật khẩu và quản lý hồ sơ.</p>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <a th:href="@{/student/classes}" class="text-decoration-none">
+                        <div class="card h-100 shadow-sm hover-card">
+                            <div class="card-body text-center">
+                                <div class="feature-icon bg-success text-white rounded-circle mx-auto mb-3">
+                                    <i class="fas fa-chalkboard fa-2x"></i>
+                                </div>
+                                <h5 class="card-title">Lớp học của tôi</h5>
+                                <p class="card-text text-muted">Xem danh sách lớp đang học, đăng ký lớp mới và quản lý lịch học.</p>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <a th:href="@{/student/grades}" class="text-decoration-none">
+                        <div class="card h-100 shadow-sm hover-card">
+                            <div class="card-body text-center">
+                                <div class="feature-icon bg-info text-white rounded-circle mx-auto mb-3">
+                                    <i class="fas fa-graduation-cap fa-2x"></i>
+                                </div>
+                                <h5 class="card-title">Điểm số</h5>
+                                <p class="card-text text-muted">Xem điểm từng môn học: giữa kỳ, cuối kỳ và điểm tổng kết.</p>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <a th:href="@{/student/schedule}" class="text-decoration-none">
+                        <div class="card h-100 shadow-sm hover-card">
+                            <div class="card-body text-center">
+                                <div class="feature-icon bg-warning text-white rounded-circle mx-auto mb-3">
+                                    <i class="fas fa-calendar-alt fa-2x"></i>
+                                </div>
+                                <h5 class="card-title">Lịch học</h5>
+                                <p class="card-text text-muted">Xem thời khóa biểu, lịch thi và các sự kiện quan trọng.</p>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body text-center">
+                            <div class="feature-icon bg-secondary text-white rounded-circle mx-auto mb-3">
+                                <i class="fas fa-bell fa-2x"></i>
+                            </div>
+                            <h5 class="card-title">Thông báo</h5>
+                            <p class="card-text text-muted">Nhận thông báo từ nhà trường và giảng viên.</p>
+                            <span class="badge bg-danger">Sắp có</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body text-center">
+                            <div class="feature-icon bg-dark text-white rounded-circle mx-auto mb-3">
+                                <i class="fas fa-graduation-cap fa-2x"></i>
+                            </div>
+                            <h5 class="card-title">Tốt nghiệp</h5>
+                            <p class="card-text text-muted">Theo dõi tiến độ tốt nghiệp và các yêu cầu.</p>
+                            <span class="badge bg-danger">Sắp có</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <a href="/student/dashboard-simple" class="text-decoration-none">
+                        <div class="card h-100 shadow-sm hover-card">
+                            <div class="card-body text-center">
+                                <div class="feature-icon bg-secondary text-white rounded-circle mx-auto mb-3">
+                                    <i class="fas fa-bug fa-2x"></i>
+                                </div>
+                                <h5 class="card-title">Test Simple Dashboard</h5>
+                                <p class="card-text text-muted">Test simplified dashboard version.</p>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Lớp học gần đây -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <h4 class="mb-3"><i class="fas fa-clock me-2"></i>Lớp học gần đây</h4>
+                    <div class="card">
+                        <div class="card-body">
+                            <div th:if="${recentClasses == null or #lists.isEmpty(recentClasses)}" class="text-center py-4">
+                                <i class="fas fa-chalkboard fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">Chưa có lớp học nào</h5>
+                                <p class="text-muted">Hãy đăng ký lớp học để bắt đầu học tập.</p>
+                                <a th:href="@{/student/classes}" class="btn btn-primary">
+                                    <i class="fas fa-plus me-1"></i>Đăng ký lớp học
+                                </a>
+                            </div>
+
+                            <div th:if="${recentClasses != null and !#lists.isEmpty(recentClasses)}" class="row">
+                                <div th:each="class : ${recentClasses}" class="col-md-4 mb-3">
+                                    <div class="card border-left-primary">
+                                        <div class="card-body">
+                                            <h6 class="card-title text-primary" th:text="${class != null ? class.name : 'Tên lớp'}">Tên lớp</h6>
+                                            <p class="card-text mb-1">
+                                                <i class="fas fa-book me-1"></i>
+                                                <span th:text="${class != null and class.subject != null ? class.subject.name : 'Chưa xác định'}">Môn học</span>
+                                            </p>
+                                            <p class="card-text mb-0">
+                                                <i class="fas fa-clock me-1"></i>
+                                                <span th:text="${class != null ? class.schedule : 'Chưa có lịch'}">Lịch học</span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        © 2025 Hệ thống Quản lý Sinh viên. All rights reserved.
+    </footer>
+</div>
+
+<script>
+    console.log("Student panel script loaded");
+    
+    function toggleLogoutDropdown() {
+        console.log("Toggle logout dropdown called");
+        const dropdown = document.getElementById("logoutDropdown");
+        if (dropdown) {
+            dropdown.style.display = (dropdown.style.display === "block") ? "none" : "block";
+        }
+    }
+
+    function toggleSidebar() {
+        console.log("Toggle sidebar called");
+        const sidebar = document.getElementById("sidebar");
+        if (sidebar) {
+            sidebar.classList.toggle("show");
+        }
+    }
+
+    function showComingSoon(feature) {
+        alert("Chức năng '" + feature + "' hiện đang được phát triển. Vui lòng quay lại sau.");
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        console.log("DOM loaded for student panel");
+        console.log("Student data:", {
+            student: document.querySelector('[th\\:text*="student.fullName"]')?.textContent,
+            totalClasses: document.querySelector('[th\\:text*="totalClasses"]')?.textContent,
+            recentClasses: document.querySelectorAll('[th\\:each="class : ${recentClasses}"]').length
+        });
+    });
+
+    document.addEventListener("click", function (event) {
+        const userInfo = document.querySelector(".user-info");
+        const dropdown = document.getElementById("logoutDropdown");
+        const sidebar = document.getElementById("sidebar");
+        const toggle = document.querySelector(".menu-toggle");
+
+        if (dropdown && userInfo && !userInfo.contains(event.target)) {
+            dropdown.style.display = "none";
+        }
+
+        if (sidebar && !sidebar.contains(event.target) && !toggle.contains(event.target)) {
+            sidebar.classList.remove("show");
+        }
+    });
+</script>
+</body>
+</html>
