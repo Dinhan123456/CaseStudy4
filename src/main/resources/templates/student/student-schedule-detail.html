@@ -1,0 +1,227 @@
+<!-- Fragment: Chi tiết lịch học -->
+<div th:fragment="scheduleDetail">
+    <div class="row">
+        <div class="col-md-8">
+            <h4 class="text-primary mb-3">
+                <i class="fas fa-book-open me-2"></i>
+                <span th:text="${schedule.subject.subjectCode}">MATH101</span> - 
+                <span th:text="${schedule.subject.subjectName}">Toán học cơ bản</span>
+            </h4>
+            
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="info-item">
+                        <i class="fas fa-user-tie text-info me-2"></i>
+                        <strong>Giảng viên:</strong>
+                        <span th:text="${schedule.teacher.fullName}">Nguyễn Văn A</span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="info-item">
+                        <i class="fas fa-envelope text-success me-2"></i>
+                        <strong>Email:</strong>
+                        <span th:text="${schedule.teacher.email}">teacher@example.com</span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="info-item">
+                        <i class="fas fa-calendar-day text-warning me-2"></i>
+                        <strong>Thứ:</strong>
+                        <span th:text="${schedule.dayOfWeekName}">Thứ Hai</span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="info-item">
+                        <i class="fas fa-clock text-primary me-2"></i>
+                        <strong>Thời gian:</strong>
+                        <span th:text="${schedule.timeSlot.startTime + ' - ' + schedule.timeSlot.endTime}">07:30 - 09:00</span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="info-item">
+                        <i class="fas fa-door-open text-info me-2"></i>
+                        <strong>Phòng học:</strong>
+                        <span th:text="${schedule.room.roomName}">A101</span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="info-item">
+                        <i class="fas fa-building text-secondary me-2"></i>
+                        <strong>Toà nhà:</strong>
+                        <span th:text="${schedule.room.building}">Toà A</span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="info-item">
+                        <i class="fas fa-calendar-check text-success me-2"></i>
+                        <strong>Ngày bắt đầu:</strong>
+                        <span th:text="${#temporals.format(schedule.startDate, 'dd/MM/yyyy')}">01/03/2024</span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="info-item">
+                        <i class="fas fa-calendar-times text-danger me-2"></i>
+                        <strong>Ngày kết thúc:</strong>
+                        <span th:if="${schedule.endDate}" th:text="${#temporals.format(schedule.endDate, 'dd/MM/yyyy')}">31/05/2024</span>
+                        <span th:unless="${schedule.endDate}" class="text-muted">Chưa xác định</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <h6><i class="fas fa-info-circle me-2"></i>Mô tả môn học:</h6>
+                <p class="text-muted" th:text="${schedule.subject.description}">
+                    Môn học cung cấp kiến thức cơ bản về toán học, bao gồm đại số, hình học và giải tích.
+                </p>
+            </div>
+
+            <div class="mt-4">
+                <h6><i class="fas fa-tasks me-2"></i>Thông tin bổ sung:</h6>
+                <div class="row g-2">
+                    <div class="col-md-4">
+                        <span class="badge bg-primary">
+                            <i class="fas fa-star me-1"></i>
+                            <span th:text="${schedule.subject.credits}">3</span> Tín chỉ
+                        </span>
+                    </div>
+                    <div class="col-md-4">
+                        <span class="badge" 
+                              th:classappend="${schedule.status.name() == 'CONFIRMED'} ? 'bg-success' : 
+                                             (${schedule.status.name() == 'PENDING'} ? 'bg-warning' : 'bg-secondary')">
+                            <i class="fas fa-circle me-1"></i>
+                            <span th:text="${schedule.status.name() == 'CONFIRMED'} ? 'Đã xác nhận' : 
+                                           (${schedule.status.name() == 'PENDING'} ? 'Chờ xác nhận' : 'Đã hủy')">
+                                Đã xác nhận
+                            </span>
+                        </span>
+                    </div>
+                    <div class="col-md-4">
+                        <span class="badge bg-info">
+                            <i class="fas fa-users me-1"></i>
+                            <span th:text="${schedule.classEntity.students.size()}">25</span> Sinh viên
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card border-0 bg-light">
+                <div class="card-body text-center">
+                    <i class="fas fa-calendar-week fa-3x text-primary mb-3"></i>
+                    <h6>Thời khóa biểu tuần</h6>
+                    <div class="schedule-preview">
+                        <div class="day-preview mb-2 p-2 bg-white rounded">
+                            <strong th:text="${schedule.dayOfWeekName}">Thứ Hai</strong><br>
+                            <small th:text="${schedule.timeSlot.startTime + ' - ' + schedule.timeSlot.endTime}">07:30 - 09:00</small><br>
+                            <small class="text-muted" th:text="${schedule.room.roomName}">Phòng A101</small>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <h6>Tuần này</h6>
+                        <div class="d-grid gap-2">
+                            <small class="text-muted">
+                                Các buổi học trong tuần:
+                                <span class="badge bg-secondary">4 buổi</span>
+                            </small>
+                            <small class="text-muted">
+                                Tổng thời gian:
+                                <span class="badge bg-info">6 giờ</span>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Danh sách lớp học gần đây -->
+            <div class="card border-0 bg-light mt-3">
+                <div class="card-body">
+                    <h6><i class="fas fa-history me-2"></i>Buổi học gần đây</h6>
+                    <div class="recent-classes">
+                        <div class="recent-item d-flex justify-content-between align-items-center py-2 border-bottom">
+                            <div>
+                                <small class="fw-bold">19/03/2024</small><br>
+                                <small class="text-muted">Bài 5: Đạo hàm</small>
+                            </div>
+                            <span class="badge bg-success">Đã học</span>
+                        </div>
+                        <div class="recent-item d-flex justify-content-between align-items-center py-2 border-bottom">
+                            <div>
+                                <small class="fw-bold">12/03/2024</small><br>
+                                <small class="text-muted">Bài 4: Giới hạn</small>
+                            </div>
+                            <span class="badge bg-success">Đã học</span>
+                        </div>
+                        <div class="recent-item d-flex justify-content-between align-items-center py-2">
+                            <div>
+                                <small class="fw-bold">26/03/2024</small><br>
+                                <small class="text-muted">Bài 6: Tích phân</small>
+                            </div>
+                            <span class="badge bg-warning">Sắp tới</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-outline-primary" onclick="printScheduleDetail()">
+                    <i class="fas fa-print me-2"></i>In thông tin
+                </button>
+                <button type="button" class="btn btn-primary" onclick="exportScheduleDetail()">
+                    <i class="fas fa-download me-2"></i>Tải về PDF
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Đóng
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .info-item {
+        padding: 8px 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    .info-item:last-child {
+        border-bottom: none;
+    }
+    .schedule-preview {
+        max-height: 200px;
+        overflow-y: auto;
+    }
+    .day-preview {
+        transition: all 0.3s;
+    }
+    .day-preview:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .recent-classes {
+        max-height: 200px;
+        overflow-y: auto;
+    }
+    .recent-item {
+        transition: background-color 0.3s;
+    }
+    .recent-item:hover {
+        background-color: rgba(0,0,0,0.05);
+        border-radius: 5px;
+    }
+</style>
+
+<script>
+    function printScheduleDetail() {
+        window.print();
+    }
+
+    function exportScheduleDetail() {
+        const scheduleId = /*[[${schedule.id}]]*/ 0;
+        window.open(`/student/schedule/detail/${scheduleId}/export`, '_blank');
+    }
+</script>

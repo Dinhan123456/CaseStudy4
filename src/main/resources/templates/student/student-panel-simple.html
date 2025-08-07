@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - Simple</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container mt-4">
+        <h1>Student Dashboard - Simple Version</h1>
+        
+        <!-- Debug Info -->
+        <div class="alert alert-info">
+            <strong>Debug Info:</strong><br>
+            Student: <span th:text="${student != null ? student.fullName : 'null'}">null</span><br>
+            Total Classes: <span th:text="${totalClasses != null ? totalClasses : 'null'}">null</span><br>
+            Recent Classes: <span th:text="${recentClasses != null ? recentClasses.size() : 'null'}">null</span><br>
+            Error: <span th:text="${error != null ? error : 'none'}">none</span>
+        </div>
+        
+        <!-- Navigation -->
+        <div class="row mb-4">
+            <div class="col">
+                <a href="/student/profile" class="btn btn-primary">Profile</a>
+                <a href="/student/classes" class="btn btn-success">Classes</a>
+                <a href="/student/grades" class="btn btn-info">Grades</a>
+                <a href="/student/schedule" class="btn btn-warning">Schedule</a>
+                <a href="/student/test-simple" class="btn btn-secondary">Test Simple</a>
+            </div>
+        </div>
+        
+        <!-- Content -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Student Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Name:</strong> <span th:text="${student != null ? student.fullName : 'Unknown'}">Unknown</span></p>
+                        <p><strong>Username:</strong> <span th:text="${student != null ? student.username : 'Unknown'}">Unknown</span></p>
+                        <p><strong>Email:</strong> <span th:text="${student != null ? student.email : 'Unknown'}">Unknown</span></p>
+                        <p><strong>Phone:</strong> <span th:text="${student != null ? student.phone : 'Unknown'}">Unknown</span></p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Statistics</h5>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Total Classes:</strong> <span th:text="${totalClasses != null ? totalClasses : 0}">0</span></p>
+                        <p><strong>Recent Classes:</strong> <span th:text="${recentClasses != null ? recentClasses.size() : 0}">0</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Classes -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Recent Classes</h5>
+                    </div>
+                    <div class="card-body">
+                        <div th:if="${recentClasses == null or #lists.isEmpty(recentClasses)}" class="text-center">
+                            <p>No recent classes</p>
+                        </div>
+                        <div th:if="${recentClasses != null and !#lists.isEmpty(recentClasses)}">
+                            <div th:each="class : ${recentClasses}" class="mb-2">
+                                <strong th:text="${class != null ? class.name : 'Unknown Class'}">Unknown Class</strong>
+                                <span th:text="${class != null and class.subject != null ? class.subject.name : 'Unknown Subject'}">Unknown Subject</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        console.log("Simple student panel loaded");
+        console.log("Page URL:", window.location.href);
+    </script>
+</body>
+</html> 
