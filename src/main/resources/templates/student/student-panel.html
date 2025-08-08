@@ -244,11 +244,12 @@
                                             <h6 class="card-title text-primary" th:text="${class != null ? class.name : 'Tên lớp'}">Tên lớp</h6>
                                             <p class="card-text mb-1">
                                                 <i class="fas fa-book me-1"></i>
-                                                <span th:text="${class != null and class.subject != null ? class.subject.name : 'Chưa xác định'}">Môn học</span>
+                                                <strong>Mô tả:</strong>
+                                                <span th:text="${class != null and class.description != null ? class.description : 'Chưa xác định'}">Chưa xác định</span>
                                             </p>
                                             <p class="card-text mb-0">
                                                 <i class="fas fa-clock me-1"></i>
-                                                <span th:text="${class != null ? class.schedule : 'Chưa có lịch'}">Lịch học</span>
+                                                <span>Chưa có lịch</span>
                                             </p>
                                         </div>
                                     </div>
