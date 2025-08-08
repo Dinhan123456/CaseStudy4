@@ -104,19 +104,11 @@
                                 <div class="card-body">
                                     <p class="card-text mb-2">
                                         <i class="fas fa-book me-2 text-info"></i>
-                                        <strong>Môn học:</strong> <span th:text="${class.subject?.name ?: 'Chưa xác định'}">Môn học</span>
-                                    </p>
-                                    <p class="card-text mb-2">
-                                        <i class="fas fa-user-tie me-2 text-warning"></i>
-                                        <strong>Giảng viên:</strong> <span th:text="${class.teacher?.fullName ?: 'Chưa phân công'}">Giảng viên</span>
+                                        <strong>Mô tả:</strong> <span th:text="${class.description ?: 'Chưa xác định'}">Chưa xác định</span>
                                     </p>
                                     <p class="card-text mb-2">
                                         <i class="fas fa-clock me-2 text-success"></i>
-                                        <strong>Thời gian:</strong> <span th:text="${class.schedule ?: 'Chưa xác định'}">Lịch học</span>
-                                    </p>
-                                    <p class="card-text mb-2">
-                                        <i class="fas fa-map-marker-alt me-2 text-danger"></i>
-                                        <strong>Phòng học:</strong> <span th:text="${class.room ?: 'Chưa xác định'}">Phòng</span>
+                                        <strong>Thời gian:</strong> <span>Chưa xác định</span>
                                     </p>
                                     <p class="card-text mb-0">
                                         <i class="fas fa-users me-2 text-secondary"></i>
@@ -179,19 +171,11 @@
                                 <div class="card-body">
                                     <p class="card-text mb-2">
                                         <i class="fas fa-book me-2 text-info"></i>
-                                        <strong>Môn học:</strong> <span th:text="${class.subject?.name ?: 'Chưa xác định'}">Môn học</span>
-                                    </p>
-                                    <p class="card-text mb-2">
-                                        <i class="fas fa-star me-2 text-warning"></i>
-                                        <strong>Tín chỉ:</strong> <span th:text="${class.subject?.credits ?: 0}">0</span>
-                                    </p>
-                                    <p class="card-text mb-2">
-                                        <i class="fas fa-user-tie me-2 text-warning"></i>
-                                        <strong>Giảng viên:</strong> <span th:text="${class.teacher?.fullName ?: 'Chưa phân công'}">Giảng viên</span>
+                                        <strong>Mô tả:</strong> <span th:text="${class.description ?: 'Chưa xác định'}">Chưa xác định</span>
                                     </p>
                                     <p class="card-text mb-2">
                                         <i class="fas fa-clock me-2 text-success"></i>
-                                        <strong>Thời gian:</strong> <span th:text="${class.schedule ?: 'Chưa xác định'}">Lịch học</span>
+                                        <strong>Thời gian:</strong> <span>Chưa xác định</span>
                                     </p>
                                     <p class="card-text mb-0">
                                         <i class="fas fa-users me-2 text-secondary"></i>
