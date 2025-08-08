@@ -144,6 +144,8 @@ header {
     gap: 24px;
 }
 
+/* Grid */
+
 .card {
     background: #fff;
     border-radius: 12px;

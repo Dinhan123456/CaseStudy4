@@ -11,8 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Controller
 @RequestMapping("/admin/schedules")
@@ -242,113 +241,114 @@ public class AdminScheduleController {
         return "redirect:/admin/schedules/" + id;
     }
 
-    // Xác nhận lịch
+    // REST endpoints cho AJAX
+    
     @PostMapping("/{id}/confirm")
-    public String confirmSchedule(@PathVariable Long id, RedirectAttributes redirectAttributes) {
-        User admin = getCurrentAdmin();
-        if (admin == null) {
-            return "redirect:/login";
-        }
-
-        Schedule schedule = scheduleService.confirmSchedule(id);
-        if (schedule != null) {
-            redirectAttributes.addFlashAttribute("message", "Đã xác nhận lịch học!");
-        } else {
-            redirectAttributes.addFlashAttribute("error", "Không tìm thấy lịch học!");
-        }
-
-        return "redirect:/admin/schedules";
-    }
-
-    // Hủy lịch
-    @PostMapping("/{id}/cancel")
-    public String cancelSchedule(@PathVariable Long id, RedirectAttributes redirectAttributes) {
-        User admin = getCurrentAdmin();
-        if (admin == null) {
-            return "redirect:/login";
-        }
-
-        Schedule schedule = scheduleService.cancelSchedule(id);
-        if (schedule != null) {
-            redirectAttributes.addFlashAttribute("message", "Đã hủy lịch học!");
-        } else {
-            redirectAttributes.addFlashAttribute("error", "Không tìm thấy lịch học!");
-        }
-
-        return "redirect:/admin/schedules";
-    }
-
-    // Xóa lịch
-    @PostMapping("/{id}/delete")
-    public String deleteSchedule(@PathVariable Long id, RedirectAttributes redirectAttributes) {
-        User admin = getCurrentAdmin();
-        if (admin == null) {
-            return "redirect:/login";
-        }
-
+    @ResponseBody
+    public Map<String, Object> confirmScheduleAjax(@PathVariable Long id) {
+        Map<String, Object> response = new HashMap<>();
         try {
-            scheduleService.deleteById(id);
-            redirectAttributes.addFlashAttribute("message", "Đã xóa lịch học!");
+            User admin = getCurrentAdmin();
+            if (admin == null) {
+                response.put("success", false);
+                response.put("message", "Không có quyền truy cập");
+                return response;
+            }
+            
+            Schedule confirmedSchedule = scheduleService.confirmSchedule(id);
+            if (confirmedSchedule != null) {
+                response.put("success", true);
+                response.put("message", "Đã duyệt lịch học thành công");
+                response.put("status", confirmedSchedule.getStatus().toString());
+            } else {
+                response.put("success", false);
+                response.put("message", "Không tìm thấy lịch học");
+            }
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", "Lỗi khi xóa: " + e.getMessage());
+            response.put("success", false);
+            response.put("message", "Lỗi: " + e.getMessage());
         }
-
-        return "redirect:/admin/schedules";
+        return response;
     }
-
-    // Kiểm tra trùng lịch (AJAX)
+    
+    @PostMapping("/{id}/cancel")
+    @ResponseBody  
+    public Map<String, Object> cancelScheduleAjax(@PathVariable Long id) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            User admin = getCurrentAdmin();
+            if (admin == null) {
+                response.put("success", false);
+                response.put("message", "Không có quyền truy cập");
+                return response;
+            }
+            
+            Schedule cancelledSchedule = scheduleService.cancelSchedule(id);
+            if (cancelledSchedule != null) {
+                response.put("success", true);
+                response.put("message", "Đã hủy lịch học");
+                response.put("status", cancelledSchedule.getStatus().toString());
+            } else {
+                response.put("success", false);
+                response.put("message", "Không tìm thấy lịch học");
+            }
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Lỗi: " + e.getMessage());
+        }
+        return response;
+    }
+    
     @PostMapping("/check-conflict")
     @ResponseBody
-    public String checkConflict(@RequestParam Long teacherId,
-                               @RequestParam Long roomId,
-                               @RequestParam Long classId,
-                               @RequestParam Integer dayOfWeek,
-                               @RequestParam Long timeSlotId,
-                               @RequestParam String startDate,
-                               @RequestParam(required = false) String endDate) {
+    public Map<String, Object> checkScheduleConflict(
+            @RequestParam Long teacherId,
+            @RequestParam Long roomId, 
+            @RequestParam Long classId,
+            @RequestParam Integer dayOfWeek,
+            @RequestParam Long timeSlotId,
+            @RequestParam String startDate,
+            @RequestParam(required = false) String endDate) {
         
+        Map<String, Object> response = new HashMap<>();
         try {
             LocalDate start = LocalDate.parse(startDate);
-            LocalDate end = endDate != null && !endDate.isEmpty() ? LocalDate.parse(endDate) : null;
+            LocalDate end = endDate != null ? LocalDate.parse(endDate) : null;
             
             boolean hasConflict = scheduleService.hasConflictingSchedule(
                 teacherId, roomId, classId, dayOfWeek, timeSlotId, start, end);
             
-            return hasConflict ? "conflict" : "ok";
+            response.put("hasConflict", hasConflict);
+            
+            if (hasConflict) {
+                List<String> conflicts = new ArrayList<>();
+                
+                List<Schedule> teacherConflicts = scheduleService.findConflictingTeacherSchedules(
+                    teacherId, dayOfWeek, timeSlotId, start, end);
+                if (!teacherConflicts.isEmpty()) {
+                    conflicts.add("Giảng viên đã có lịch dạy vào thời gian này");
+                }
+                
+                List<Schedule> roomConflicts = scheduleService.findConflictingRoomSchedules(
+                    roomId, dayOfWeek, timeSlotId, start, end);
+                if (!roomConflicts.isEmpty()) {
+                    conflicts.add("Phòng học đã được sử dụng vào thời gian này");
+                }
+                
+                List<Schedule> classConflicts = scheduleService.findConflictingClassSchedules(
+                    classId, dayOfWeek, timeSlotId, start, end);
+                if (!classConflicts.isEmpty()) {
+                    conflicts.add("Lớp học đã có lịch vào thời gian này");
+                }
+                
+                response.put("conflicts", conflicts);
+            }
             
         } catch (Exception e) {
-            return "error";
+            response.put("error", e.getMessage());
         }
+        
+        return response;
     }
-
-    // Lấy lịch theo bộ lọc (AJAX)
-    @GetMapping("/filter")
-    @ResponseBody
-    public List<Schedule> filterSchedules(@RequestParam(required = false) Long teacherId,
-                                         @RequestParam(required = false) Long classId,
-                                         @RequestParam(required = false) Long roomId,
-                                         @RequestParam(required = false) Integer dayOfWeek) {
-        
-        if (teacherId != null) {
-            return dayOfWeek != null ? 
-                   scheduleService.findByTeacherAndDay(teacherId, dayOfWeek) :
-                   scheduleService.findByTeacherId(teacherId);
-        }
-        
-        if (classId != null) {
-            return dayOfWeek != null ?
-                   scheduleService.findByClassAndDay(classId, dayOfWeek) :
-                   scheduleService.findByClassId(classId);
-        }
-        
-        if (roomId != null) {
-            return scheduleService.findByRoomId(roomId);
-        }
-        
-        if (dayOfWeek != null) {
-            return scheduleService.findByDayOfWeek(dayOfWeek);
-        }
-        
-        return scheduleService.findAllActiveSchedules();
-    }
+    
 }

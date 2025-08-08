@@ -89,6 +89,11 @@ header {
     left: 0;
     overflow-y: auto;
     z-index: 999;
+    display: none;
+}
+
+.sidebar.show {
+    display: block;
 }
 
 .sidebar h4 {
@@ -96,7 +101,7 @@ header {
     margin-bottom: 24px;
     color: #bbb;
     letter-spacing: 0.5px;
-    text-transform: uppercase;
+    /*text-transform: uppercase;*/
 }
 
 .sidebar a {
@@ -118,10 +123,15 @@ header {
 
 /* Main Content */
 .main-content {
-    margin-left: 240px;
-    padding: 100px 40px 60px;
-    background: #f9f9f9;
+    margin-left: 0;
+    padding: 100px 40px 40px;
     flex-grow: 1;
+    background: #f9f9f9;
+    transition: margin-left 0.3s ease;
+}
+
+.sidebar.show ~ .main-content {
+    margin-left: 240px;
 }
 
 .main-content h2 {
@@ -166,15 +176,13 @@ header {
 
 /* Footer */
 footer {
-    background: #ffffff;
+    background: #fff;
     color: #888;
     text-align: center;
     padding: 12px 20px;
-    margin-left: 240px;
-    border-top: 1px solid #e0e0e0;
     font-size: 13px;
-    z-index: 1000;
-    position: relative;
+    border-top: 1px solid #e0e0e0;
+    margin-top: auto;
 }
 
 /* Responsive */

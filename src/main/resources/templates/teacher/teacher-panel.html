@@ -27,13 +27,17 @@
     </header>
 
     <!-- Sidebar -->
-    <div class="sidebar">
-        <a th:href="@{/teacher/dashboard}" class="active"><i class="fas fa-home me-2"></i>Trang chủ</a>
+    <div class="sidebar" id="sidebar">
+        <a th:href="@{/teacher/dashboard}" class="active">
+            <i class="bi bi-house-door-fill"></i>Trang chủ
+        </a>
         <a th:href="@{/teacher/profile}"><i class="fas fa-user-cog me-2"></i>Tài khoản cá nhân</a>
         <a th:href="@{/teacher/classes}"><i class="fas fa-chalkboard-teacher me-2"></i>Lớp đang dạy</a>
         <a th:href="@{/teacher/grades}"><i class="fas fa-clipboard me-2"></i>Quản lý điểm</a>
         <a th:href="@{/teacher/schedule}"><i class="fas fa-calendar-alt me-2"></i>Lịch dạy</a>
     </div>
+
+
 
     <!-- Main content -->
     <div class="main-content">
@@ -85,10 +89,6 @@
         if (sidebar) {
             sidebar.classList.toggle("show");
         }
-    }
-
-    function showComingSoon(feature) {
-        alert("Chức năng '" + feature + "' hiện đang được phát triển. Vui lòng quay lại sau.");
     }
 
     document.addEventListener("click", function (event) {

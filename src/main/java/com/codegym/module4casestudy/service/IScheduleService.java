@@ -46,7 +46,9 @@ public interface IScheduleService {
     
     // Tìm lịch theo trạng thái
     List<Schedule> findByStatus(Schedule.ScheduleStatus status);
-    
+
+
+
     // Kiểm tra trùng lịch
     boolean hasConflictingSchedule(Long teacherId, Long roomId, Long classId, 
                                    Integer dayOfWeek, Long timeSlotId, 

@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import javax.validation.Valid;
+import java.util.Collections;
 import java.util.List;
 
 @Controller
@@ -74,6 +75,7 @@ public class ClassController {
         model.addAttribute("allStudents", userService.findByRole(Role.STUDENT));
         model.addAttribute("allTeachers", userService.findByRole(Role.TEACHER));
         model.addAttribute("allSubjects", subjectService.findAll());
+        model.addAttribute("classSubjects", Collections.emptyList()); // để view không bị null
         return "admin/admin-class-form";
     }
 
@@ -102,9 +104,10 @@ public class ClassController {
             }
 
             // Đảm bảo trạng thái active được set
-            if (classEntity.isActive() == null) {
-                classEntity.setActive(true);
-            }
+//            if (classEntity.getActive() == null) {
+//                classEntity.setActive(true);
+//            }
+
 
             classService.save(classEntity);
             redirectAttributes.addFlashAttribute("message", "Thêm lớp học thành công!");
@@ -176,7 +179,7 @@ public class ClassController {
 
             existingClass.setName(classEntity.getName());
             existingClass.setDescription(classEntity.getDescription());
-            existingClass.setActive(classEntity.isActive());
+            existingClass.setActive(classEntity.getActive());
 
             classService.save(existingClass);
             redirectAttributes.addFlashAttribute("message", "Cập nhật lớp học thành công!");

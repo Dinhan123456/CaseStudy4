@@ -16,13 +16,13 @@ public class Class {
     private String name;
 
     @Column(name = "status", columnDefinition = "BOOLEAN DEFAULT TRUE")
-    private Boolean active = true;
+    private boolean active = true;
 
-    public Boolean isActive() {
+    public boolean getActive() {
         return active;
     }
 
-    public void setActive(Boolean active) {
+    public void setActive(boolean active) {
         this.active = active;
     }
 
