@@ -379,7 +379,7 @@ public class StudentController {
                 .anyMatch(c -> c.getId().equals(classId));
 
         model.addAttribute("student", student);
-        model.addAttribute("class", studentClass);
+        model.addAttribute("clazz", studentClass);
         model.addAttribute("isEnrolled", isEnrolled);
 
         return "student/student-class-details";
