@@ -47,12 +47,26 @@ public interface ClassRepository extends JpaRepository<Class, Long> {
     @Query("SELECT c FROM Class c JOIN c.teachers t WHERE t.id = :teacherId")
     List<Class> findClassesByTeacherId(@Param("teacherId") Long teacherId);
 
+    // Dành cho dashboard: fetch sẵn students/teachers để khỏi lazy
     @Query("""
-        SELECT DISTINCT c FROM Class c
-        JOIN FETCH c.students s
-        LEFT JOIN FETCH c.teachers t
-        WHERE s.id = :studentId
-        ORDER BY c.id DESC
+       SELECT DISTINCT c
+       FROM Class c
+       JOIN c.students s
+       LEFT JOIN FETCH c.students
+       LEFT JOIN FETCH c.teachers
+       WHERE s.id = :studentId
+       ORDER BY c.id DESC
     """)
     List<Class> findRecentByStudentIdWithFetch(@Param("studentId") Long studentId);
+
+    // Lớp SV đã đăng ký
+    @Query("""
+       SELECT DISTINCT c
+       FROM Class c
+       JOIN c.students s
+       WHERE s.id = :studentId
+       ORDER BY c.id DESC
+    """)
+    List<Class> findByStudentId(@Param("studentId") Long studentId);
+
 }

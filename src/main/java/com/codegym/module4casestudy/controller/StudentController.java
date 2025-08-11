@@ -3,176 +3,212 @@ package com.codegym.module4casestudy.controller;
 import com.codegym.module4casestudy.model.User;
 import com.codegym.module4casestudy.model.Class;
 import com.codegym.module4casestudy.model.Subject;
-import com.codegym.module4casestudy.service.IUserService;
+import com.codegym.module4casestudy.model.ClassSubject;
+import com.codegym.module4casestudy.repository.ClassSubjectRepository;
 import com.codegym.module4casestudy.service.IClassService;
 import com.codegym.module4casestudy.service.ISubjectService;
+import com.codegym.module4casestudy.service.IUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.lang.reflect.Method;
 import java.security.Principal;
-import java.util.Collections;
-import java.util.List;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/student")
 public class StudentController {
 
-    @Autowired
-    private IUserService userService;
+    @Autowired private IUserService userService;
+    @Autowired private IClassService classService;
+    @Autowired private ISubjectService subjectService;
+    @Autowired private PasswordEncoder passwordEncoder;
+    @Autowired private ClassSubjectRepository classSubjectRepository;
 
-    @Autowired
-    private IClassService classService;
+    /* ===================== Helpers ===================== */
 
-    @Autowired
-    private ISubjectService subjectService;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    // Helper method để lấy thông tin sinh viên hiện tại
     private User getCurrentStudent() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null) {
-            System.out.println("DEBUG: Authentication is null");
+        if (auth == null || !auth.isAuthenticated()
+                || "anonymousUser".equals(String.valueOf(auth.getPrincipal()))) {
             return null;
         }
-        
-        String username = auth.getName();
-        System.out.println("DEBUG: Current username: " + username);
-        
-        // Kiểm tra nếu username là "anonymousUser" hoặc null
-        if (username == null || username.equals("anonymousUser")) {
-            System.out.println("DEBUG: Username is anonymousUser or null");
-            return null;
-        }
-        
-        User student = userService.findByUsername(username).orElse(null);
-        if (student == null) {
-            System.out.println("DEBUG: Student not found for username: " + username);
-        } else {
-            System.out.println("DEBUG: Student found: " + student.getFullName() + " (ID: " + student.getId() + ")");
-        }
-        
-        return student;
+        return userService.findByUsername(auth.getName()).orElse(null);
     }
+
+    private Object callGetter(Object target, String... names) {
+        if (target == null) return null;
+        for (String n : names) {
+            try {
+                Method m = target.getClass().getMethod(n);
+                return m.invoke(target);
+            } catch (Exception ignored) { }
+        }
+        return null;
+    }
+
+    /* ---- Subject maps (từ bảng liên kết ClassSubject) ---- */
+    private Map<Long, String> buildSubjectNameMap(List<Class> classes) {
+        Map<Long, String> map = new HashMap<>();
+        for (Class c : classes) {
+            List<ClassSubject> links = classSubjectRepository.findByClassEntityId(c.getId());
+            String names = links.stream()
+                    .map(cs -> cs.getSubject() != null ? cs.getSubject().getName() : null)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.joining(", "));
+            map.put(c.getId(), names);
+        }
+        return map;
+    }
+
+    private Map<Long, Integer> buildSubjectCreditsMap(List<Class> classes) {
+        Map<Long, Integer> map = new HashMap<>();
+        for (Class c : classes) {
+            List<ClassSubject> links = classSubjectRepository.findByClassEntityId(c.getId());
+            int credits = links.stream()
+                    .map(cs -> {
+                        Subject s = cs.getSubject();
+                        return (s != null && s.getCredits() != null) ? s.getCredits() : 0;
+                    })
+                    .reduce(0, Integer::sum);
+            map.put(c.getId(), credits);
+        }
+        return map;
+    }
+
+    /* ---- Các map khác: cố gắng lấy bằng reflection, không có thì để rỗng/0 ---- */
+    private Map<Long, String> buildTeacherNameMap(List<Class> classes) {
+        Map<Long, String> map = new HashMap<>();
+        for (Class c : classes) {
+            Object teacher = callGetter(c, "getTeacher", "getInstructor", "getLecturer");
+            Object name = teacher != null
+                    ? callGetter(teacher, "getFullName", "getName", "getUsername")
+                    : null;
+            map.put(c.getId(), name != null ? String.valueOf(name) : "");
+        }
+        return map;
+    }
+
+    private Map<Long, String> buildScheduleMap(List<Class> classes) {
+        Map<Long, String> map = new HashMap<>();
+        for (Class c : classes) {
+            Object schedule = callGetter(c, "getSchedule", "getTime", "getTimetable", "getTimeTable");
+            map.put(c.getId(), schedule != null ? String.valueOf(schedule) : "");
+        }
+        return map;
+    }
+
+    private Map<Long, String> buildRoomMap(List<Class> classes) {
+        Map<Long, String> map = new HashMap<>();
+        for (Class c : classes) {
+            Object room = callGetter(c, "getRoom", "getClassroom", "getRoomName");
+            map.put(c.getId(), room != null ? String.valueOf(room) : "");
+        }
+        return map;
+    }
+
+    private Map<Long, Integer> buildStudentCountMap(List<Class> classes) {
+        Map<Long, Integer> map = new HashMap<>();
+        for (Class c : classes) {
+            Object students = callGetter(c, "getStudents", "getStudentList", "getEnrolledStudents");
+            Integer count = 0;
+            if (students instanceof Collection<?>) {
+                count = ((Collection<?>) students).size();
+            } else {
+                Object n = callGetter(c, "getStudentCount", "getEnrolled", "getCurrentSize");
+                if (n instanceof Number) count = ((Number) n).intValue();
+            }
+            map.put(c.getId(), count);
+        }
+        return map;
+    }
+
+    private Map<Long, Integer> buildCapacityMap(List<Class> classes) {
+        Map<Long, Integer> map = new HashMap<>();
+        for (Class c : classes) {
+            Object cap = callGetter(c, "getCapacity", "getMaxStudents", "getLimit", "getQuota");
+            map.put(c.getId(), cap instanceof Number ? ((Number) cap).intValue() : 40); // mặc định 40
+        }
+        return map;
+    }
+
+    private void addClassMapsToModel(Model model, List<Class> classes) {
+        // Gộp và loại trùng theo ID để build map 1 lần
+        Map<Long, Class> byId = new LinkedHashMap<>();
+        for (Class cl : classes) byId.put(cl.getId(), cl);
+        List<Class> list = new ArrayList<>(byId.values());
+
+        model.addAttribute("subjectNameMap",   buildSubjectNameMap(list));
+        model.addAttribute("subjectCreditsMap",buildSubjectCreditsMap(list));
+        model.addAttribute("teacherNameMap",   buildTeacherNameMap(list));
+        model.addAttribute("scheduleMap",      buildScheduleMap(list));
+        model.addAttribute("roomMap",          buildRoomMap(list));
+        model.addAttribute("studentCountMap",  buildStudentCountMap(list));
+        model.addAttribute("capacityMap",      buildCapacityMap(list));
+    }
+
+    /* ===================== Endpoints ===================== */
 
     @GetMapping("/dashboard")
     public String dashboard(Model model, Principal principal) {
-        var user = userService.findByUsername(principal.getName());
-//        Long studentId = user.getId();
-        Long studentId = user.get().getId();
+        if (principal == null) return "redirect:/login";
+        User student = userService.findByUsername(principal.getName()).orElse(null);
+        if (student == null) return "redirect:/login";
 
-        List<Class> recentClasses = classService.findRecentClassesForStudentWithFetch(studentId);
-        model.addAttribute("recentClasses",
-                recentClasses != null ? recentClasses : Collections.emptyList());
-
+        List<Class> recentClasses = classService.findRecentClassesForStudentWithFetch(student.getId());
+        model.addAttribute("recentClasses", recentClasses != null ? recentClasses : Collections.emptyList());
         return "student/student-panel";
     }
 
-
-
     @GetMapping("/dashboard-simple")
     public String showStudentDashboardSimple(Model model) {
-        System.out.println("DEBUG: Entering showStudentDashboardSimple");
-        
         try {
             User student = getCurrentStudent();
-            System.out.println("DEBUG: Student object: " + (student != null ? student.getFullName() : "null"));
-            
             if (student == null) {
-                System.out.println("DEBUG: Student is null, creating dummy student");
                 model.addAttribute("error", "Không tìm thấy thông tin sinh viên! Vui lòng đăng nhập lại.");
-                student = new User();
-                student.setUsername("Unknown");
-                student.setFullName("Không xác định");
-                student.setEmail("");
-                student.setPhone("");
+                student = new User(); student.setUsername("Unknown"); student.setFullName("Không xác định");
             }
-
-            List<Class> studentClasses = classService.findAll();
-            System.out.println("DEBUG: Found " + studentClasses.size() + " classes");
-            
+            List<Class> classes = classService.findAll();
             model.addAttribute("student", student);
-            model.addAttribute("totalClasses", studentClasses.size());
-            model.addAttribute("recentClasses", studentClasses.size() > 3 ? studentClasses.subList(0, 3) : studentClasses);
-            
-            System.out.println("DEBUG: Returning student-panel-simple template");
+            model.addAttribute("totalClasses", classes.size());
+            model.addAttribute("recentClasses", classes.size() > 3 ? classes.subList(0,3) : classes);
             return "student/student-panel-simple";
-            
         } catch (Exception e) {
-            System.out.println("DEBUG: Exception in showStudentDashboardSimple: " + e.getMessage());
-            e.printStackTrace();
             model.addAttribute("error", "Có lỗi xảy ra: " + e.getMessage());
-            
-            User dummyStudent = new User();
-            dummyStudent.setUsername("Unknown");
-            dummyStudent.setFullName("Không xác định");
-            dummyStudent.setEmail("");
-            dummyStudent.setPhone("");
-            
-            model.addAttribute("student", dummyStudent);
+            User dummy = new User(); dummy.setUsername("Unknown"); dummy.setFullName("Không xác định");
+            model.addAttribute("student", dummy);
             model.addAttribute("totalClasses", 0);
             model.addAttribute("recentClasses", new ArrayList<>());
-            
             return "student/student-panel-simple";
         }
     }
 
     @GetMapping("/dashboard-fixed")
     public String showStudentDashboardFixed(Model model) {
-        System.out.println("DEBUG: Entering showStudentDashboardFixed");
-        
         try {
             User student = getCurrentStudent();
-            System.out.println("DEBUG: Student object: " + (student != null ? student.getFullName() : "null"));
-            
             if (student == null) {
-                System.out.println("DEBUG: Student is null, creating dummy student");
                 model.addAttribute("error", "Không tìm thấy thông tin sinh viên! Vui lòng đăng nhập lại.");
-                student = new User();
-                student.setUsername("Unknown");
-                student.setFullName("Không xác định");
-                student.setEmail("");
-                student.setPhone("");
+                student = new User(); student.setUsername("Unknown"); student.setFullName("Không xác định");
             }
-
-            List<Class> studentClasses = classService.findAll();
-            System.out.println("DEBUG: Found " + studentClasses.size() + " classes");
-            
+            List<Class> classes = classService.findAll();
             model.addAttribute("student", student);
-            model.addAttribute("totalClasses", studentClasses.size());
-            model.addAttribute("recentClasses", studentClasses.size() > 3 ? studentClasses.subList(0, 3) : studentClasses);
-            
-            System.out.println("DEBUG: Returning student-panel-fixed template");
+            model.addAttribute("totalClasses", classes.size());
+            model.addAttribute("recentClasses", classes.size() > 3 ? classes.subList(0,3) : classes);
             return "student/student-panel-fixed";
-            
         } catch (Exception e) {
-            System.out.println("DEBUG: Exception in showStudentDashboardFixed: " + e.getMessage());
-            e.printStackTrace();
             model.addAttribute("error", "Có lỗi xảy ra: " + e.getMessage());
-            
-            User dummyStudent = new User();
-            dummyStudent.setUsername("Unknown");
-            dummyStudent.setFullName("Không xác định");
-            dummyStudent.setEmail("");
-            dummyStudent.setPhone("");
-            
-            model.addAttribute("student", dummyStudent);
+            User dummy = new User(); dummy.setUsername("Unknown"); dummy.setFullName("Không xác định");
+            model.addAttribute("student", dummy);
             model.addAttribute("totalClasses", 0);
             model.addAttribute("recentClasses", new ArrayList<>());
-            
             return "student/student-panel-fixed";
         }
     }
@@ -181,26 +217,20 @@ public class StudentController {
     public String debugStudent(Model model) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         User student = getCurrentStudent();
-        
         model.addAttribute("auth", auth);
         model.addAttribute("student", student);
         model.addAttribute("authName", auth != null ? auth.getName() : "null");
         model.addAttribute("authDetails", auth != null ? auth.getDetails() : "null");
         model.addAttribute("authAuthorities", auth != null ? auth.getAuthorities() : "null");
-        
         return "student/student-debug";
     }
 
-    @GetMapping("/test")
-    public String testStudent(Model model) {
-        System.out.println("DEBUG: Test endpoint called");
+    @GetMapping("/test") public String testStudent(Model model) {
         model.addAttribute("message", "Test endpoint working!");
         return "student/student-test";
     }
 
-    @GetMapping("/test-simple")
-    public String testSimple() {
-        System.out.println("DEBUG: Test simple endpoint called");
+    @GetMapping("/test-simple") public String testSimple() {
         return "student/student-test-simple";
     }
 
@@ -208,116 +238,83 @@ public class StudentController {
     public String checkSession(Model model) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         User student = getCurrentStudent();
-        
-        System.out.println("DEBUG: Session check - Auth: " + (auth != null ? auth.getName() : "null"));
-        System.out.println("DEBUG: Session check - Student: " + (student != null ? student.getFullName() : "null"));
-        
         model.addAttribute("auth", auth);
         model.addAttribute("student", student);
         model.addAttribute("authName", auth != null ? auth.getName() : "null");
         model.addAttribute("authDetails", auth != null ? auth.getDetails() : "null");
         model.addAttribute("authAuthorities", auth != null ? auth.getAuthorities() : "null");
-        
         return "student/student-session";
     }
 
-    // Hiển thị thông tin cá nhân của sinh viên
     @GetMapping("/profile")
     public String showStudentProfile(Model model) {
         User student = getCurrentStudent();
         if (student == null) {
             model.addAttribute("error", "Không tìm thấy thông tin sinh viên! Vui lòng đăng nhập lại.");
-            // Thêm một student mẫu để template không bị lỗi
-            student = new User();
-            student.setUsername("Unknown");
-            student.setFullName("Không xác định");
-            student.setEmail("");
-            student.setPhone("");
+            student = new User(); student.setUsername("Unknown"); student.setFullName("Không xác định");
         }
-
         model.addAttribute("student", student);
         return "student/student-profile";
     }
 
     @PostMapping("/update-profile")
-    public String updateStudentProfile(
-            @RequestParam String email,
-            @RequestParam String phone,
-            @RequestParam String fullName,
-            @RequestParam(required = false) String passwordOld,
-            @RequestParam(required = false) String password,
-            RedirectAttributes redirectAttributes) {
-
+    public String updateStudentProfile(@RequestParam String email,
+                                       @RequestParam String phone,
+                                       @RequestParam String fullName,
+                                       @RequestParam(required = false) String passwordOld,
+                                       @RequestParam(required = false) String password,
+                                       RedirectAttributes redirect) {
         try {
             User student = getCurrentStudent();
             if (student == null) {
-                redirectAttributes.addFlashAttribute("error", "Không tìm thấy thông tin sinh viên!");
+                redirect.addFlashAttribute("error", "Không tìm thấy thông tin sinh viên!");
                 return "redirect:/student/profile";
             }
-
-            // Cập nhật thông tin cơ bản
             student.setEmail(email);
             student.setPhone(phone);
             student.setFullName(fullName);
 
-            // Xử lý đổi mật khẩu
             if (password != null && !password.trim().isEmpty()) {
                 if (passwordOld == null || passwordOld.trim().isEmpty()) {
-                    redirectAttributes.addFlashAttribute("error", "Vui lòng nhập mật khẩu cũ!");
+                    redirect.addFlashAttribute("error", "Vui lòng nhập mật khẩu cũ!");
                     return "redirect:/student/profile";
                 }
-
-                // Kiểm tra mật khẩu cũ
                 if (!passwordEncoder.matches(passwordOld, student.getPassword())) {
-                    redirectAttributes.addFlashAttribute("error", "Mật khẩu cũ không đúng!");
+                    redirect.addFlashAttribute("error", "Mật khẩu cũ không đúng!");
                     return "redirect:/student/profile";
                 }
-
-                // Mã hóa và cập nhật mật khẩu mới
                 student.setPassword(passwordEncoder.encode(password));
             }
 
-            // Lưu thông tin
             userService.save(student);
-            redirectAttributes.addFlashAttribute("message", "Cập nhật thông tin thành công!");
-
+            redirect.addFlashAttribute("message", "Cập nhật thông tin thành công!");
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", "Có lỗi xảy ra khi cập nhật thông tin!");
+            redirect.addFlashAttribute("error", "Có lỗi xảy ra khi cập nhật thông tin!");
         }
-
         return "redirect:/student/profile";
     }
 
     @GetMapping("/classes")
     public String showStudentClasses(Model model) {
-        System.out.println("DEBUG: Entering showStudentClasses");
         User student = getCurrentStudent();
-        System.out.println("DEBUG: Student in classes: " + (student != null ? student.getFullName() : "null"));
-        
-        if (student == null) {
-            System.out.println("DEBUG: Student is null in classes, creating dummy student");
-            model.addAttribute("error", "Không tìm thấy thông tin sinh viên! Vui lòng đăng nhập lại.");
-            // Thêm một student mẫu để template không bị lỗi
-            student = new User();
-            student.setUsername("Unknown");
-            student.setFullName("Không xác định");
-            student.setEmail("");
-            student.setPhone("");
-        }
+        if (student == null) return "redirect:/login";
 
-        // Lấy các lớp mà student đã đăng ký
         List<Class> studentClasses = classService.findClassesByStudentId(student.getId());
-        // Lấy các lớp mà student chưa đăng ký
-        List<Class> allClasses = classService.findAll();
-        List<Class> availableClasses = allClasses.stream()
-                .filter(c -> !studentClasses.contains(c))
+
+        Set<Long> enrolledIds = studentClasses.stream().map(Class::getId).collect(Collectors.toSet());
+        List<Class> availableClasses = classService.findAll().stream()
+                .filter(c -> !enrolledIds.contains(c.getId()))
                 .collect(Collectors.toList());
+
+        // Build maps dùng cho cả 2 danh sách
+        List<Class> all = new ArrayList<>();
+        all.addAll(studentClasses);
+        all.addAll(availableClasses);
+        addClassMapsToModel(model, all);
 
         model.addAttribute("student", student);
         model.addAttribute("studentClasses", studentClasses);
         model.addAttribute("availableClasses", availableClasses);
-
-        System.out.println("DEBUG: Returning student-classes template");
         return "student/student-classes";
     }
 
@@ -328,147 +325,96 @@ public class StudentController {
             model.addAttribute("error", "Không tìm thấy thông tin sinh viên! Vui lòng đăng nhập lại.");
             return "redirect:/login";
         }
-
         Class studentClass = classService.findById(classId).orElse(null);
         if (studentClass == null) {
             model.addAttribute("error", "Không tìm thấy lớp học!");
             return "redirect:/student/classes";
         }
-
-        // Kiểm tra xem student có trong lớp này không
         boolean isEnrolled = classService.findClassesByStudentId(student.getId())
-                .stream()
-                .anyMatch(c -> c.getId().equals(classId));
+                .stream().anyMatch(c -> c.getId().equals(classId));
 
         model.addAttribute("student", student);
         model.addAttribute("class", studentClass);
         model.addAttribute("isEnrolled", isEnrolled);
-
         return "student/student-class-details";
     }
 
     @GetMapping("/grades")
     public String showStudentGrades(Model model) {
-        System.out.println("DEBUG: Entering showStudentGrades");
         User student = getCurrentStudent();
-        System.out.println("DEBUG: Student in grades: " + (student != null ? student.getFullName() : "null"));
-        
         if (student == null) {
-            System.out.println("DEBUG: Student is null in grades, creating dummy student");
             model.addAttribute("error", "Không tìm thấy thông tin sinh viên! Vui lòng đăng nhập lại.");
-            // Thêm một student mẫu để template không bị lỗi
-            student = new User();
-            student.setUsername("Unknown");
-            student.setFullName("Không xác định");
-            student.setEmail("");
-            student.setPhone("");
+            student = new User(); student.setUsername("Unknown"); student.setFullName("Không xác định");
         }
-
-        // Lấy các lớp mà student đã đăng ký
         List<Class> studentClasses = classService.findClassesByStudentId(student.getId());
         List<Subject> subjects = subjectService.findActiveSubjects();
 
         model.addAttribute("student", student);
         model.addAttribute("classes", studentClasses);
         model.addAttribute("subjects", subjects);
-
-        System.out.println("DEBUG: Returning student-grades template");
         return "student/student-grades";
     }
 
     @GetMapping("/schedule")
     public String showStudentSchedule(Model model) {
-        System.out.println("DEBUG: Entering showStudentSchedule");
         User student = getCurrentStudent();
-        System.out.println("DEBUG: Student in schedule: " + (student != null ? student.getFullName() : "null"));
-        
         if (student == null) {
-            System.out.println("DEBUG: Student is null in schedule, creating dummy student");
             model.addAttribute("error", "Không tìm thấy thông tin sinh viên! Vui lòng đăng nhập lại.");
-            // Thêm một student mẫu để template không bị lỗi
-            student = new User();
-            student.setUsername("Unknown");
-            student.setFullName("Không xác định");
-            student.setEmail("");
-            student.setPhone("");
+            student = new User(); student.setUsername("Unknown"); student.setFullName("Không xác định");
         }
-
-        // Lấy các lớp mà student đã đăng ký
         List<Class> studentClasses = classService.findClassesByStudentId(student.getId());
         model.addAttribute("student", student);
         model.addAttribute("classes", studentClasses);
-
-        System.out.println("DEBUG: Returning student-schedule template");
         return "student/student-schedule";
     }
 
     @PostMapping("/classes/{classId}/register")
-    public String registerClass(
-            @PathVariable Long classId,
-            RedirectAttributes redirectAttributes) {
-
+    public String registerClass(@PathVariable Long classId, RedirectAttributes redirect) {
         User student = getCurrentStudent();
-        if (student == null) {
-            return "redirect:/login";
-        }
+        if (student == null) return "redirect:/login";
 
         try {
-            Class classToRegister = classService.findById(classId).orElse(null);
-            if (classToRegister == null) {
-                redirectAttributes.addFlashAttribute("error", "Không tìm thấy lớp học!");
+            Class target = classService.findById(classId).orElse(null);
+            if (target == null) {
+                redirect.addFlashAttribute("error", "Không tìm thấy lớp học!");
                 return "redirect:/student/classes";
             }
-
-            // Kiểm tra xem đã đăng ký chưa
-            List<Class> enrolledClasses = classService.findClassesByStudentId(student.getId());
-            if (enrolledClasses.stream().anyMatch(c -> c.getId().equals(classId))) {
-                redirectAttributes.addFlashAttribute("error", "Bạn đã đăng ký lớp này rồi!");
+            boolean exists = classService.findClassesByStudentId(student.getId())
+                    .stream().anyMatch(c -> c.getId().equals(classId));
+            if (exists) {
+                redirect.addFlashAttribute("error", "Bạn đã đăng ký lớp này rồi!");
                 return "redirect:/student/classes";
             }
-
-            // Đăng ký lớp học
             classService.addStudentToClass(classId, student.getId());
-            redirectAttributes.addFlashAttribute("message", "Đăng ký lớp học thành công!");
-
+            redirect.addFlashAttribute("message", "Đăng ký lớp học thành công!");
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", "Có lỗi xảy ra khi đăng ký lớp!");
+            redirect.addFlashAttribute("error", "Có lỗi xảy ra khi đăng ký lớp!");
         }
-
         return "redirect:/student/classes";
     }
 
     @PostMapping("/classes/{classId}/unregister")
-    public String unregisterClass(
-            @PathVariable Long classId,
-            RedirectAttributes redirectAttributes) {
-
+    public String unregisterClass(@PathVariable Long classId, RedirectAttributes redirect) {
         User student = getCurrentStudent();
-        if (student == null) {
-            return "redirect:/login";
-        }
+        if (student == null) return "redirect:/login";
 
         try {
-            Class classToUnregister = classService.findById(classId).orElse(null);
-            if (classToUnregister == null) {
-                redirectAttributes.addFlashAttribute("error", "Không tìm thấy lớp học!");
+            Class target = classService.findById(classId).orElse(null);
+            if (target == null) {
+                redirect.addFlashAttribute("error", "Không tìm thấy lớp học!");
                 return "redirect:/student/classes";
             }
-
-            // Kiểm tra xem có đăng ký chưa
-            List<Class> enrolledClasses = classService.findClassesByStudentId(student.getId());
-            if (enrolledClasses.stream().noneMatch(c -> c.getId().equals(classId))) {
-                redirectAttributes.addFlashAttribute("error", "Bạn chưa đăng ký lớp này!");
+            boolean enrolled = classService.findClassesByStudentId(student.getId())
+                    .stream().anyMatch(c -> c.getId().equals(classId));
+            if (!enrolled) {
+                redirect.addFlashAttribute("error", "Bạn chưa đăng ký lớp này!");
                 return "redirect:/student/classes";
             }
-
-            // Hủy đăng ký lớp học
             classService.removeStudentFromClass(classId, student.getId());
-            redirectAttributes.addFlashAttribute("message", "Hủy đăng ký lớp học thành công!");
-
+            redirect.addFlashAttribute("message", "Hủy đăng ký lớp học thành công!");
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", "Có lỗi xảy ra khi hủy đăng ký lớp!");
+            redirect.addFlashAttribute("error", "Có lỗi xảy ra khi hủy đăng ký lớp!");
         }
-
         return "redirect:/student/classes";
     }
 }

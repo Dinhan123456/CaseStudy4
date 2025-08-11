@@ -31,8 +31,8 @@ public interface IClassService {
     boolean existsByNameAndIdNot(String name, Long id);
 
     // Quản lý sinh viên trong lớp
-    void addStudentToClass(Long classId, Long studentId);
 
+    void addStudentToClass(Long classId, Long studentId);
     void removeStudentFromClass(Long classId, Long studentId);
 
     // Quản lý giảng viên trong lớp
@@ -48,11 +48,8 @@ public interface IClassService {
     void removeTeacherFromSubject(Long classId, Long subjectId, Long teacherId);
 
     // Tìm lớp học theo student/teacher
-    List<Class> findClassesByStudentId(Long studentId);
-
     List<Class> findClassesByTeacherId(Long teacherId);
 
+    List<Class> findClassesByStudentId(Long studentId);
     List<Class> findRecentClassesForStudentWithFetch(Long studentId);
-
-
 }

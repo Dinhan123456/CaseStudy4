@@ -203,20 +203,26 @@ public class ClassServiceImpl implements IClassService {
         classSubjectRepository.deleteByClassEntityIdAndSubjectIdAndTeacherId(classId, subjectId, teacherId);
     }
 
-    @Override
-    public List<Class> findClassesByStudentId(Long studentId) {
-        return classRepository.findClassesByStudentId(studentId);
-    }
+
 
     @Override
     public List<Class> findClassesByTeacherId(Long teacherId) {
         return classRepository.findClassesByTeacherId(teacherId);
     }
 
-    @Override
-    @Transactional(readOnly = true)
+
+
+
+    @Override @Transactional(readOnly = true)
+    public List<Class> findClassesByStudentId(Long studentId) {
+        return classRepository.findByStudentId(studentId);
+    }
+
+    @Override @Transactional(readOnly = true)
     public List<Class> findRecentClassesForStudentWithFetch(Long studentId) {
         return classRepository.findRecentByStudentIdWithFetch(studentId);
     }
+
+
 
 }
