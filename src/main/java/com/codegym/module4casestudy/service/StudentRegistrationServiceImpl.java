@@ -160,6 +160,8 @@ public class StudentRegistrationServiceImpl implements IStudentRegistrationServi
                 });
 
         // Tạo đăng ký mới
+
+        
         StudentRegistration registration = new StudentRegistration();
         registration.setStudent(student);
         registration.setSubject(subject);
