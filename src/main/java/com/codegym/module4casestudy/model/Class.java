@@ -32,7 +32,7 @@ public class Class {
     private String description;
 
     // Many-to-Many với User (Students)
-    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @ManyToMany
     @JoinTable(
         name = "student_class",
         joinColumns = @JoinColumn(name = "class_id"),

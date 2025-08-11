@@ -1,4 +1,3 @@
-
 package com.codegym.module4casestudy.controller;
 
 import com.codegym.module4casestudy.model.User;
@@ -49,23 +48,23 @@ public class StudentController {
             System.out.println("DEBUG: Authentication is null");
             return null;
         }
-
+        
         String username = auth.getName();
         System.out.println("DEBUG: Current username: " + username);
-
+        
         // Kiểm tra nếu username là "anonymousUser" hoặc null
         if (username == null || username.equals("anonymousUser")) {
             System.out.println("DEBUG: Username is anonymousUser or null");
             return null;
         }
-
+        
         User student = userService.findByUsername(username).orElse(null);
         if (student == null) {
             System.out.println("DEBUG: Student not found for username: " + username);
         } else {
             System.out.println("DEBUG: Student found: " + student.getFullName() + " (ID: " + student.getId() + ")");
         }
-
+        
         return student;
     }
 
@@ -75,7 +74,7 @@ public class StudentController {
 //        Long studentId = user.getId();
         Long studentId = user.get().getId();
 
-        List<Class> recentClasses = classService.findClassesByStudentId(studentId);
+        List<Class> recentClasses = classService.findRecentClassesForStudentWithFetch(studentId);
         model.addAttribute("recentClasses",
                 recentClasses != null ? recentClasses : Collections.emptyList());
 
@@ -87,11 +86,11 @@ public class StudentController {
     @GetMapping("/dashboard-simple")
     public String showStudentDashboardSimple(Model model) {
         System.out.println("DEBUG: Entering showStudentDashboardSimple");
-
+        
         try {
             User student = getCurrentStudent();
             System.out.println("DEBUG: Student object: " + (student != null ? student.getFullName() : "null"));
-
+            
             if (student == null) {
                 System.out.println("DEBUG: Student is null, creating dummy student");
                 model.addAttribute("error", "Không tìm thấy thông tin sinh viên! Vui lòng đăng nhập lại.");
@@ -104,29 +103,29 @@ public class StudentController {
 
             List<Class> studentClasses = classService.findAll();
             System.out.println("DEBUG: Found " + studentClasses.size() + " classes");
-
+            
             model.addAttribute("student", student);
             model.addAttribute("totalClasses", studentClasses.size());
             model.addAttribute("recentClasses", studentClasses.size() > 3 ? studentClasses.subList(0, 3) : studentClasses);
-
+            
             System.out.println("DEBUG: Returning student-panel-simple template");
             return "student/student-panel-simple";
-
+            
         } catch (Exception e) {
             System.out.println("DEBUG: Exception in showStudentDashboardSimple: " + e.getMessage());
             e.printStackTrace();
             model.addAttribute("error", "Có lỗi xảy ra: " + e.getMessage());
-
+            
             User dummyStudent = new User();
             dummyStudent.setUsername("Unknown");
             dummyStudent.setFullName("Không xác định");
             dummyStudent.setEmail("");
             dummyStudent.setPhone("");
-
+            
             model.addAttribute("student", dummyStudent);
             model.addAttribute("totalClasses", 0);
             model.addAttribute("recentClasses", new ArrayList<>());
-
+            
             return "student/student-panel-simple";
         }
     }
@@ -134,11 +133,11 @@ public class StudentController {
     @GetMapping("/dashboard-fixed")
     public String showStudentDashboardFixed(Model model) {
         System.out.println("DEBUG: Entering showStudentDashboardFixed");
-
+        
         try {
             User student = getCurrentStudent();
             System.out.println("DEBUG: Student object: " + (student != null ? student.getFullName() : "null"));
-
+            
             if (student == null) {
                 System.out.println("DEBUG: Student is null, creating dummy student");
                 model.addAttribute("error", "Không tìm thấy thông tin sinh viên! Vui lòng đăng nhập lại.");
@@ -151,29 +150,29 @@ public class StudentController {
 
             List<Class> studentClasses = classService.findAll();
             System.out.println("DEBUG: Found " + studentClasses.size() + " classes");
-
+            
             model.addAttribute("student", student);
             model.addAttribute("totalClasses", studentClasses.size());
             model.addAttribute("recentClasses", studentClasses.size() > 3 ? studentClasses.subList(0, 3) : studentClasses);
-
+            
             System.out.println("DEBUG: Returning student-panel-fixed template");
             return "student/student-panel-fixed";
-
+            
         } catch (Exception e) {
             System.out.println("DEBUG: Exception in showStudentDashboardFixed: " + e.getMessage());
             e.printStackTrace();
             model.addAttribute("error", "Có lỗi xảy ra: " + e.getMessage());
-
+            
             User dummyStudent = new User();
             dummyStudent.setUsername("Unknown");
             dummyStudent.setFullName("Không xác định");
             dummyStudent.setEmail("");
             dummyStudent.setPhone("");
-
+            
             model.addAttribute("student", dummyStudent);
             model.addAttribute("totalClasses", 0);
             model.addAttribute("recentClasses", new ArrayList<>());
-
+            
             return "student/student-panel-fixed";
         }
     }
@@ -182,13 +181,13 @@ public class StudentController {
     public String debugStudent(Model model) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         User student = getCurrentStudent();
-
+        
         model.addAttribute("auth", auth);
         model.addAttribute("student", student);
         model.addAttribute("authName", auth != null ? auth.getName() : "null");
         model.addAttribute("authDetails", auth != null ? auth.getDetails() : "null");
         model.addAttribute("authAuthorities", auth != null ? auth.getAuthorities() : "null");
-
+        
         return "student/student-debug";
     }
 
@@ -209,16 +208,16 @@ public class StudentController {
     public String checkSession(Model model) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         User student = getCurrentStudent();
-
+        
         System.out.println("DEBUG: Session check - Auth: " + (auth != null ? auth.getName() : "null"));
         System.out.println("DEBUG: Session check - Student: " + (student != null ? student.getFullName() : "null"));
-
+        
         model.addAttribute("auth", auth);
         model.addAttribute("student", student);
         model.addAttribute("authName", auth != null ? auth.getName() : "null");
         model.addAttribute("authDetails", auth != null ? auth.getDetails() : "null");
         model.addAttribute("authAuthorities", auth != null ? auth.getAuthorities() : "null");
-
+        
         return "student/student-session";
     }
 
@@ -294,7 +293,7 @@ public class StudentController {
         System.out.println("DEBUG: Entering showStudentClasses");
         User student = getCurrentStudent();
         System.out.println("DEBUG: Student in classes: " + (student != null ? student.getFullName() : "null"));
-
+        
         if (student == null) {
             System.out.println("DEBUG: Student is null in classes, creating dummy student");
             model.addAttribute("error", "Không tìm thấy thông tin sinh viên! Vui lòng đăng nhập lại.");
@@ -353,7 +352,7 @@ public class StudentController {
         System.out.println("DEBUG: Entering showStudentGrades");
         User student = getCurrentStudent();
         System.out.println("DEBUG: Student in grades: " + (student != null ? student.getFullName() : "null"));
-
+        
         if (student == null) {
             System.out.println("DEBUG: Student is null in grades, creating dummy student");
             model.addAttribute("error", "Không tìm thấy thông tin sinh viên! Vui lòng đăng nhập lại.");
@@ -382,7 +381,7 @@ public class StudentController {
         System.out.println("DEBUG: Entering showStudentSchedule");
         User student = getCurrentStudent();
         System.out.println("DEBUG: Student in schedule: " + (student != null ? student.getFullName() : "null"));
-
+        
         if (student == null) {
             System.out.println("DEBUG: Student is null in schedule, creating dummy student");
             model.addAttribute("error", "Không tìm thấy thông tin sinh viên! Vui lòng đăng nhập lại.");

@@ -51,4 +51,8 @@ public interface IClassService {
     List<Class> findClassesByStudentId(Long studentId);
 
     List<Class> findClassesByTeacherId(Long teacherId);
+
+    List<Class> findRecentClassesForStudentWithFetch(Long studentId);
+
+
 }
