@@ -62,4 +62,31 @@ public interface StudentRegistrationRepository extends JpaRepository<StudentRegi
     // Đếm số sinh viên đăng ký một lịch học
     @Query("SELECT COUNT(sr) FROM StudentRegistration sr WHERE sr.schedule.id = :scheduleId AND sr.active = true")
     Long countStudentsBySchedule(@Param("scheduleId") Long scheduleId);
+    
+    // Các method mới cho service
+    List<StudentRegistration> findByActiveTrue();
+    
+    List<StudentRegistration> findByStudentIdAndActiveTrue(Long studentId);
+    
+    List<StudentRegistration> findByScheduleIdAndActiveTrue(Long scheduleId);
+    
+    List<StudentRegistration> findBySubjectIdAndActiveTrue(Long subjectId);
+    
+    // Sử dụng @Query để tìm theo classEntity.id
+    @Query("SELECT sr FROM StudentRegistration sr WHERE sr.classEntity.id = :classId AND sr.active = true")
+    List<StudentRegistration> findByClassIdAndActiveTrue(@Param("classId") Long classId);
+    
+    List<StudentRegistration> findByRegistrationPeriodIdAndActiveTrue(Long periodId);
+    
+    boolean existsByStudentIdAndScheduleIdAndActiveTrue(Long studentId, Long scheduleId);
+    
+    boolean existsByStudentIdAndSubjectIdAndActiveTrue(Long studentId, Long subjectId);
+    
+    @Query("SELECT COUNT(sr) FROM StudentRegistration sr WHERE sr.subject.id = :subjectId AND sr.active = true")
+    long countBySubjectIdAndActiveTrue(@Param("subjectId") Long subjectId);
+    
+    @Query("SELECT COUNT(sr) FROM StudentRegistration sr WHERE sr.classEntity.id = :classId AND sr.active = true")
+    long countByClassIdAndActiveTrue(@Param("classId") Long classId);
+    
+    long countByStatusAndActiveTrue(StudentRegistration.RegistrationStatus status);
 }

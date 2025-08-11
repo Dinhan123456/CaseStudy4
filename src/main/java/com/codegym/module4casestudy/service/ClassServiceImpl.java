@@ -2,12 +2,18 @@ package com.codegym.module4casestudy.service;
 
 import com.codegym.module4casestudy.model.Class;
 import com.codegym.module4casestudy.model.ClassSubject;
+import com.codegym.module4casestudy.model.Schedule;
 import com.codegym.module4casestudy.model.Subject;
 import com.codegym.module4casestudy.model.User;
 import com.codegym.module4casestudy.repository.ClassRepository;
 import com.codegym.module4casestudy.repository.ClassSubjectRepository;
+import com.codegym.module4casestudy.repository.ScheduleRepository;
 import com.codegym.module4casestudy.repository.SubjectRepository;
 import com.codegym.module4casestudy.repository.UserRepository;
+import com.codegym.module4casestudy.model.StudentRegistration;
+import com.codegym.module4casestudy.model.Grade;
+import com.codegym.module4casestudy.repository.StudentRegistrationRepository;
+import com.codegym.module4casestudy.repository.GradeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +37,15 @@ public class ClassServiceImpl implements IClassService {
 
     @Autowired
     private SubjectRepository subjectRepository;
+
+    @Autowired
+    private ScheduleRepository scheduleRepository;
+
+    @Autowired
+    private StudentRegistrationRepository studentRegistrationRepository;
+
+    @Autowired
+    private GradeRepository gradeRepository;
 
     @Override
     public List<Class> findAll() {
@@ -58,7 +73,49 @@ public class ClassServiceImpl implements IClassService {
     }
 
     @Override
+    @Transactional
     public void deleteById(Long id) {
+        Class classEntity = classRepository.findById(id).orElse(null);
+        if (classEntity == null) {
+            throw new RuntimeException("Không tìm thấy lớp học với ID: " + id);
+        }
+
+        // Xóa các bản ghi liên quan trước khi xóa lớp học
+
+        // 1. Xóa các bản ghi trong bảng class_subject
+        List<ClassSubject> classSubjects = classSubjectRepository.findByClassEntityId(id);
+        if (classSubjects != null && !classSubjects.isEmpty()) {
+            classSubjectRepository.deleteAll(classSubjects);
+        }
+
+        // 2. Xóa các bản ghi trong bảng schedules
+        List<Schedule> schedules = scheduleRepository.findByClassId(id);
+        if (schedules != null && !schedules.isEmpty()) {
+            scheduleRepository.deleteAll(schedules);
+        }
+
+        // 3. Xóa các bản ghi điểm (grades) liên quan tới lớp
+        List<Grade> grades = gradeRepository.findByClassEntityIdAndActiveTrue(id);
+        if (grades != null && !grades.isEmpty()) {
+            gradeRepository.deleteAll(grades);
+        }
+
+        // 4. Xóa các đăng ký học (student_registrations) liên quan tới lớp
+        List<StudentRegistration> registrations = studentRegistrationRepository.findByClassIdAndActiveTrue(id);
+        if (registrations != null && !registrations.isEmpty()) {
+            studentRegistrationRepository.deleteAll(registrations);
+        }
+
+        // 5. Gỡ liên kết Many-to-Many với students và teachers để dọn bảng trung gian
+        if (classEntity.getStudents() != null && !classEntity.getStudents().isEmpty()) {
+            classEntity.getStudents().clear();
+        }
+        if (classEntity.getTeachers() != null && !classEntity.getTeachers().isEmpty()) {
+            classEntity.getTeachers().clear();
+        }
+        classRepository.save(classEntity);
+
+        // 6. Xóa lớp học
         classRepository.deleteById(id);
     }
 

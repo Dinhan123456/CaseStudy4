@@ -4,6 +4,7 @@ package com.codegym.module4casestudy.model;
 import javax.persistence.*;
 import java.util.HashSet;
 import java.util.Set;
+import javax.persistence.CascadeType;
 
 @Entity
 @Table(name = "classes")
@@ -40,7 +41,7 @@ public class Class {
     private Set<User> students = new HashSet<>();
 
     // Many-to-Many với User (Teachers)
-    @ManyToMany
+    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(
         name = "teacher_class",
         joinColumns = @JoinColumn(name = "class_id"),

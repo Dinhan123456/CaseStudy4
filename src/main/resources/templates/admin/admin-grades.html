@@ -418,39 +418,111 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Tải dữ liệu ban đầu
 function loadInitialData() {
-    // Giả lập dữ liệu - trong thực tế sẽ gọi API
-    studentsData = [
-        {id: 1, name: 'Nguyễn Văn A', email: 'a@email.com', className: 'Java01'},
-        {id: 2, name: 'Trần Thị B', email: 'b@email.com', className: 'Java01'},
-        {id: 3, name: 'Lê Văn C', email: 'c@email.com', className: 'Java02'}
-    ];
+    // Gọi API để lấy dữ liệu thật từ database
+    fetch('/api/users/students')
+        .then(response => response.json())
+        .then(students => {
+            studentsData = students.map(student => ({
+                id: student.id,
+                name: student.fullName,
+                email: student.email,
+                className: student.classEntity ? student.classEntity.name : 'Chưa phân lớp'
+            }));
+            populateSelects();
+        })
+        .catch(error => {
+            console.error('Lỗi khi tải danh sách sinh viên:', error);
+            // Fallback: dùng dữ liệu mẫu nếu API lỗi
+            studentsData = [
+                {id: 1, name: 'Nguyễn Văn A', email: 'a@email.com', className: 'Java01'},
+                {id: 2, name: 'Trần Thị B', email: 'b@email.com', className: 'Java01'},
+                {id: 3, name: 'Lê Văn C', email: 'c@email.com', className: 'Java02'}
+            ];
+            populateSelects();
+        });
 
-    subjectsData = [
-        {id: 1, name: 'Java Programming', credits: 3},
-        {id: 2, name: 'Database Design', credits: 2},
-        {id: 3, name: 'Web Development', credits: 4}
-    ];
+    fetch('/api/subjects')
+        .then(response => response.json())
+        .then(subjects => {
+            subjectsData = subjects.map(subject => ({
+                id: subject.id,
+                name: subject.name,
+                credits: subject.credits
+            }));
+            populateSelects();
+        })
+        .catch(error => {
+            console.error('Lỗi khi tải danh sách môn học:', error);
+            // Fallback: dùng dữ liệu mẫu nếu API lỗi
+            subjectsData = [
+                {id: 1, name: 'Java Programming', credits: 3},
+                {id: 2, name: 'Database Design', credits: 2},
+                {id: 3, name: 'Web Development', credits: 4}
+            ];
+            populateSelects();
+        });
 
-    classesData = [
-        {id: 1, name: 'Java01'},
-        {id: 2, name: 'Java02'}
-    ];
+    fetch('/api/classes')
+        .then(response => response.json())
+        .then(classes => {
+            classesData = classes.map(cls => ({
+                id: cls.id,
+                name: cls.name
+            }));
+            populateSelects();
+        })
+        .catch(error => {
+            console.error('Lỗi khi tải danh sách lớp học:', error);
+            // Fallback: dùng dữ liệu mẫu nếu API lỗi
+            classesData = [
+                {id: 1, name: 'Java01'},
+                {id: 2, name: 'Java02'}
+            ];
+            populateSelects();
+        });
 
-    gradesData = [
-        {
-            id: 1, studentId: 1, studentName: 'Nguyễn Văn A', className: 'Java01',
-            subjectId: 1, subjectName: 'Java Programming',
-            grade15: 8.5, gradeMidterm: 7.8, gradeAttendance: 9.0, gradeFinal: 8.2
-        },
-        {
-            id: 2, studentId: 2, studentName: 'Trần Thị B', className: 'Java01',
-            subjectId: 1, subjectName: 'Java Programming',
-            grade15: 7.2, gradeMidterm: 8.5, gradeAttendance: 8.5, gradeFinal: 7.8
-        }
-    ];
+    // Tải tất cả điểm từ database
+    loadAllGrades();
+}
 
-    populateSelects();
-    updateGradeStatistics();
+// Tải tất cả điểm từ database
+function loadAllGrades() {
+    fetch('/api/grades')
+        .then(response => response.json())
+        .then(grades => {
+            gradesData = grades.map(grade => ({
+                id: grade.id,
+                studentId: grade.student.id,
+                studentName: grade.student.fullName,
+                className: grade.classEntity ? grade.classEntity.name : 'Chưa phân lớp',
+                subjectId: grade.subject.id,
+                subjectName: grade.subject.name,
+                grade15: grade.grade15,
+                gradeMidterm: grade.gradeMidterm,
+                gradeAttendance: grade.gradeAttendance,
+                gradeFinal: grade.gradeFinal,
+                averageGrade: grade.averageGrade,
+                gradeRank: grade.gradeRank
+            }));
+            displayGrades(gradesData);
+        })
+        .catch(error => {
+            console.error('Lỗi khi tải điểm:', error);
+            // Fallback: dùng dữ liệu mẫu nếu API lỗi
+            gradesData = [
+                {
+                    id: 1, studentId: 1, studentName: 'Nguyễn Văn A', className: 'Java01',
+                    subjectId: 1, subjectName: 'Java Programming',
+                    grade15: 8.5, gradeMidterm: 7.8, gradeAttendance: 9.0, gradeFinal: 8.2
+                },
+                {
+                    id: 2, studentId: 2, studentName: 'Trần Thị B', className: 'Java01',
+                    subjectId: 1, subjectName: 'Java Programming',
+                    grade15: 7.2, gradeMidterm: 8.5, gradeAttendance: 8.5, gradeFinal: 7.8
+                }
+            ];
+            displayGrades(gradesData);
+        });
 }
 
 // Điền dữ liệu vào các select box
@@ -489,12 +561,32 @@ function populateSelects() {
 function loadGradesByClass() {
     const classId = document.getElementById('classFilter').value;
     if (classId) {
-        const filteredGrades = gradesData.filter(grade =>
-            studentsData.find(s => s.id === grade.studentId && s.className === classesData.find(c => c.id == classId)?.name)
-        );
-        displayGrades(filteredGrades);
+        fetch(`/api/grades/class/${classId}`)
+            .then(response => response.json())
+            .then(grades => {
+                const formattedGrades = grades.map(grade => ({
+                    id: grade.id,
+                    studentId: grade.student.id,
+                    studentName: grade.student.fullName,
+                    className: grade.classEntity ? grade.classEntity.name : 'Chưa phân lớp',
+                    subjectId: grade.subject.id,
+                    subjectName: grade.subject.name,
+                    grade15: grade.grade15,
+                    gradeMidterm: grade.gradeMidterm,
+                    gradeAttendance: grade.gradeAttendance,
+                    gradeFinal: grade.gradeFinal,
+                    averageGrade: grade.averageGrade,
+                    gradeRank: grade.gradeRank
+                }));
+                displayGrades(formattedGrades);
+            })
+            .catch(error => {
+                console.error('Lỗi khi tải điểm theo lớp:', error);
+                displayGrades([]);
+            });
     } else {
-        displayGrades([]);
+        // Nếu chưa chọn lớp, hiển thị tất cả để tránh cảm giác "không hiện"
+        loadAllGrades();
     }
 }
 
@@ -502,10 +594,32 @@ function loadGradesByClass() {
 function loadGradesBySubject() {
     const subjectId = document.getElementById('subjectFilter').value;
     if (subjectId) {
-        const filteredGrades = gradesData.filter(grade => grade.subjectId == subjectId);
-        displayGrades(filteredGrades);
+        fetch(`/api/grades/subject/${subjectId}`)
+            .then(response => response.json())
+            .then(grades => {
+                const formattedGrades = grades.map(grade => ({
+                    id: grade.id,
+                    studentId: grade.student.id,
+                    studentName: grade.student.fullName,
+                    className: grade.classEntity ? grade.classEntity.name : 'Chưa phân lớp',
+                    subjectId: grade.subject.id,
+                    subjectName: grade.subject.name,
+                    grade15: grade.grade15,
+                    gradeMidterm: grade.gradeMidterm,
+                    gradeAttendance: grade.gradeAttendance,
+                    gradeFinal: grade.gradeFinal,
+                    averageGrade: grade.averageGrade,
+                    gradeRank: grade.gradeRank
+                }));
+                displayGrades(formattedGrades);
+            })
+            .catch(error => {
+                console.error('Lỗi khi tải điểm theo môn học:', error);
+                displayGrades([]);
+            });
     } else {
-        displayGrades([]);
+        // Nếu chưa chọn môn, hiển thị tất cả
+        loadAllGrades();
     }
 }
 
@@ -513,12 +627,32 @@ function loadGradesBySubject() {
 function searchStudents() {
     const searchTerm = document.getElementById('studentSearch').value.toLowerCase();
     if (searchTerm) {
-        const filteredGrades = gradesData.filter(grade =>
-            grade.studentName.toLowerCase().includes(searchTerm)
-        );
-        displayGrades(filteredGrades);
+        fetch(`/api/grades/search?keyword=${encodeURIComponent(searchTerm)}`)
+            .then(response => response.json())
+            .then(grades => {
+                const formattedGrades = grades.map(grade => ({
+                    id: grade.id,
+                    studentId: grade.student.id,
+                    studentName: grade.student.fullName,
+                    className: grade.classEntity ? grade.classEntity.name : 'Chưa phân lớp',
+                    subjectId: grade.subject.id,
+                    subjectName: grade.subject.name,
+                    grade15: grade.grade15,
+                    gradeMidterm: grade.gradeMidterm,
+                    gradeAttendance: grade.gradeAttendance,
+                    gradeFinal: grade.gradeFinal,
+                    averageGrade: grade.averageGrade,
+                    gradeRank: grade.gradeRank
+                }));
+                displayGrades(formattedGrades);
+            })
+            .catch(error => {
+                console.error('Lỗi khi tìm kiếm điểm:', error);
+                displayGrades([]);
+            });
     } else {
-        displayGrades([]);
+        // Không nhập gì thì hiển thị tất cả
+        loadAllGrades();
     }
 }
 
@@ -539,9 +673,10 @@ function displayGrades(grades) {
 
     tbody.innerHTML = '';
     grades.forEach((grade, index) => {
-        const avgGrade10 = calculateAverage(grade.grade15, grade.gradeMidterm, grade.gradeAttendance, grade.gradeFinal);
+        // Sử dụng điểm trung bình và xếp hạng từ database nếu có
+        const avgGrade10 = grade.averageGrade || calculateAverage(grade.grade15, grade.gradeMidterm, grade.gradeAttendance, grade.gradeFinal);
         const avgGrade4 = convertToGrade4(avgGrade10);
-        const rank = getGradeRank(avgGrade4);
+        const rank = grade.gradeRank || getGradeRank(avgGrade4);
 
         tbody.innerHTML += `
             <tr>
@@ -644,22 +779,28 @@ function addGrade() {
 
 // Sửa điểm
 function editGrade(gradeId) {
-    const grade = gradesData.find(g => g.id === gradeId);
-    if (!grade) return;
+    // Tìm điểm trong database
+    fetch(`/api/grades/detail/${gradeId}`)
+        .then(response => response.json())
+        .then(grade => {
+            document.getElementById('gradeModalTitle').textContent = 'Chỉnh sửa điểm';
+            document.getElementById('gradeId').value = grade.id;
+            document.getElementById('studentSelect').value = grade.student.id;
+            document.getElementById('subjectSelect').value = grade.subject.id;
+            document.getElementById('grade15').value = grade.grade15 || '';
+            document.getElementById('gradeMidterm').value = grade.gradeMidterm || '';
+            document.getElementById('gradeAttendance').value = grade.gradeAttendance || '';
+            document.getElementById('gradeFinal').value = grade.gradeFinal || '';
 
-    document.getElementById('gradeModalTitle').textContent = 'Chỉnh sửa điểm';
-    document.getElementById('gradeId').value = grade.id;
-    document.getElementById('studentSelect').value = grade.studentId;
-    document.getElementById('subjectSelect').value = grade.subjectId;
-    document.getElementById('grade15').value = grade.grade15;
-    document.getElementById('gradeMidterm').value = grade.gradeMidterm;
-    document.getElementById('gradeAttendance').value = grade.gradeAttendance;
-    document.getElementById('gradeFinal').value = grade.gradeFinal;
+            calculateAverageGrade();
 
-    calculateAverageGrade();
-
-    const modal = new bootstrap.Modal(document.getElementById('gradeModal'));
-    modal.show();
+            const modal = new bootstrap.Modal(document.getElementById('gradeModal'));
+            modal.show();
+        })
+        .catch(error => {
+            console.error('Lỗi khi tải thông tin điểm:', error);
+            alert('Không thể tải thông tin điểm để chỉnh sửa!');
+        });
 }
 
 // Tính điểm trung bình trong modal
@@ -693,49 +834,79 @@ function saveGrade() {
         return;
     }
 
-    const student = studentsData.find(s => s.id === studentId);
-    const subject = subjectsData.find(s => s.id === subjectId);
+    const formData = new FormData();
+    formData.append('studentId', studentId);
+    formData.append('subjectId', subjectId);
+    if (grade15) formData.append('grade15', grade15);
+    if (gradeMidterm) formData.append('gradeMidterm', gradeMidterm);
+    if (gradeAttendance) formData.append('gradeAttendance', gradeAttendance);
+    if (gradeFinal) formData.append('gradeFinal', gradeFinal);
+    formData.append('semester', 'Học kỳ 1');
+    formData.append('academicYear', '2024-2025');
 
-    const gradeData = {
-        id: gradeId ? parseInt(gradeId) : Date.now(),
-        studentId: studentId,
-        studentName: student.name,
-        className: student.className,
-        subjectId: subjectId,
-        subjectName: subject.name,
-        grade15: grade15,
-        gradeMidterm: gradeMidterm,
-        gradeAttendance: gradeAttendance,
-        gradeFinal: gradeFinal
-    };
+    const url = gradeId ? `/api/grades/${gradeId}` : '/api/grades';
+    const method = gradeId ? 'PUT' : 'POST';
 
-    if (gradeId) {
-        // Cập nhật
-        const index = gradesData.findIndex(g => g.id === parseInt(gradeId));
-        if (index !== -1) {
-            gradesData[index] = gradeData;
+    fetch(url, {
+        method: method,
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            // Đóng modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('gradeModal'));
+            modal.hide();
+            
+            // Refresh dữ liệu
+            const currentClass = document.getElementById('classFilter').value;
+            const currentSubject = document.getElementById('subjectFilter').value;
+            if (currentClass) {
+                loadGradesByClass();
+            } else if (currentSubject) {
+                loadGradesBySubject();
+            } else {
+                loadAllGrades();
+            }
+        } else {
+            alert('Lỗi: ' + data.message);
         }
-    } else {
-        // Thêm mới
-        gradesData.push(gradeData);
-    }
-
-    // Đóng modal và refresh bảng
-    const modal = bootstrap.Modal.getInstance(document.getElementById('gradeModal'));
-    modal.hide();
-
-    // Refresh bảng hiện tại
-    loadGradesByClass();
-
-    alert('Lưu điểm thành công!');
+    })
+    .catch(error => {
+        console.error('Lỗi khi lưu điểm:', error);
+        alert('Có lỗi xảy ra khi lưu điểm!');
+    });
 }
 
 // Xóa điểm
 function deleteGrade(gradeId) {
     if (confirm('Bạn có chắc chắn muốn xóa điểm này?')) {
-        gradesData = gradesData.filter(g => g.id !== gradeId);
-        loadGradesByClass();
-        alert('Xóa điểm thành công!');
+        fetch(`/api/grades/${gradeId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                // Refresh dữ liệu
+                const currentClass = document.getElementById('classFilter').value;
+                const currentSubject = document.getElementById('subjectFilter').value;
+                if (currentClass) {
+                    loadGradesByClass();
+                } else if (currentSubject) {
+                    loadGradesBySubject();
+                } else {
+                    loadAllGrades();
+                }
+            } else {
+                alert('Lỗi: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Lỗi khi xóa điểm:', error);
+            alert('Có lỗi xảy ra khi xóa điểm!');
+        });
     }
 }
 

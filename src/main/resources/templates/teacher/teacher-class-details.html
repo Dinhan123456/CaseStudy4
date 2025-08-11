@@ -43,12 +43,12 @@
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a th:href="@{/teacher/dashboard}">Trang chủ</a></li>
                     <li class="breadcrumb-item"><a th:href="@{/teacher/classes}">Lớp đang dạy</a></li>
-                    <li class="breadcrumb-item active" th:text="${class.name}">Chi tiết lớp</li>
+                    <li class="breadcrumb-item active" th:text="${clazz.name}">Chi tiết lớp</li>
                 </ol>
             </nav>
 
             <h2 class="mb-4">
-                <i class="fas fa-chalkboard me-2"></i>Chi tiết lớp học: <span th:text="${class.name}">Tên lớp</span>
+                <i class="fas fa-chalkboard me-2"></i>Chi tiết lớp học: <span th:text="${clazz.name}">Tên lớp</span>
             </h2>
 
             <!-- Hiển thị thông báo -->
@@ -74,23 +74,23 @@
                             <table class="table table-borderless">
                                 <tr>
                                     <td><i class="fas fa-tag me-2"></i><strong>Tên lớp:</strong></td>
-                                    <td th:text="${class.name}">Tên lớp</td>
+                                    <td th:text="${clazz.name}">Tên lớp</td>
                                 </tr>
                                 <tr>
                                     <td><i class="fas fa-book me-2"></i><strong>Môn học:</strong></td>
-                                    <td th:text="${class.subject?.name ?: 'Chưa xác định'}">Môn học</td>
+                                    <td>Chưa xác định</td>
                                 </tr>
                                 <tr>
                                     <td><i class="fas fa-users me-2"></i><strong>Số sinh viên:</strong></td>
-                                    <td><span class="badge bg-info" th:text="${class.students?.size() ?: 0}">0</span></td>
+                                    <td><span class="badge bg-info" th:text="${clazz.students == null ? 0 : clazz.students.size()}">0</span></td>
                                 </tr>
                                 <tr>
                                     <td><i class="fas fa-calendar me-2"></i><strong>Thời gian:</strong></td>
-                                    <td th:text="${class.schedule ?: 'Chưa xác định'}">Chưa xác định</td>
+                                    <td>Chưa xác định</td>
                                 </tr>
                                 <tr>
                                     <td><i class="fas fa-map-marker-alt me-2"></i><strong>Phòng học:</strong></td>
-                                    <td th:text="${class.room ?: 'Chưa xác định'}">Chưa xác định</td>
+                                    <td>Chưa xác định</td>
                                 </tr>
                             </table>
                         </div>
@@ -103,13 +103,13 @@
                         </div>
                         <div class="card-body">
                             <div class="d-grid gap-2">
-                                <a th:href="@{/teacher/grades?classId={id}(id=${class.id})}" class="btn btn-success">
+                                <a th:href="@{/teacher/grades?classId={id}(id=${clazz.id})}" class="btn btn-success">
                                     <i class="fas fa-clipboard me-2"></i>Quản lý điểm số
                                 </a>
                                 <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#attendanceModal">
                                     <i class="fas fa-check-square me-2"></i>Điểm danh
                                 </button>
-                                <a th:href="@{/teacher/schedule?classId={id}(id=${class.id})}" class="btn btn-info">
+                                <a th:href="@{/teacher/schedule?classId={id}(id=${clazz.id})}" class="btn btn-info">
                                     <i class="fas fa-calendar-alt me-2"></i>Xem lịch học
                                 </a>
                             </div>

@@ -18,19 +18,16 @@
         </div>
         <div class="user-info">
             <i class="fas fa-user me-2" onclick="toggleLogoutDropdown()"></i>
-<!--            <span>Hi, Admin</span>-->
             <div id="logoutDropdown" class="logout-dropdown">
                 <form th:action="@{/logout}" method="post">
-                    <button type="submit" class="btn btn-sm btn-outline-danger w-100">Đăng xuất</button>
+                    <button type="submit" class="btn btn-sm btn-outline-danger w-100">Logout</button>
                 </form>
             </div>
         </div>
     </header>
 
     <div class="sidebar" id="sidebar">
-        <a th:href="@{/admin/panel}" class="sidebar-link home-link">
-            <i class="bi bi-house-door-fill"></i>Trang chủ
-        </a>
+        <a th:href="@{/admin/panel}" class="sidebar-link home-link"><i class="bi bi-house-door-fill"></i>Trang chủ</a>
         <a th:href="@{/admin/info}"><i class="fas fa-user me-2"></i>Tài khoản</a>
         <a th:href="@{/subjects}"><i class="fas fa-book me-2"></i>Môn học</a>
         <a th:href="@{/classes}"><i class="fas fa-chalkboard me-2"></i>Lớp học</a>

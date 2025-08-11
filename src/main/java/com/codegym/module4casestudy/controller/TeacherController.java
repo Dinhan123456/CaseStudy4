@@ -3,9 +3,11 @@ package com.codegym.module4casestudy.controller;
 import com.codegym.module4casestudy.model.User;
 import com.codegym.module4casestudy.model.Class;
 import com.codegym.module4casestudy.model.Subject;
+import com.codegym.module4casestudy.model.Grade;
 import com.codegym.module4casestudy.service.IUserService;
 import com.codegym.module4casestudy.service.IClassService;
 import com.codegym.module4casestudy.service.ISubjectService;
+import com.codegym.module4casestudy.service.IGradeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -34,6 +36,9 @@ public class TeacherController {
 
     @Autowired
     private ISubjectService subjectService;
+
+    @Autowired
+    private IGradeService gradeService;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -162,14 +167,31 @@ public class TeacherController {
     @GetMapping("/classes")
     public String showTeacherClasses(Model model) {
         User teacher = getCurrentTeacher();
-        if (teacher == null) {
-            return "redirect:/login";
+        if (teacher == null || teacher.getId() == null) {
+            model.addAttribute("error", "Không tìm thấy thông tin giảng viên! Vui lòng đăng nhập lại.");
+            // Tạo teacher mẫu để template không bị lỗi
+            teacher = new User();
+            teacher.setUsername("Unknown");
+            teacher.setFullName("Không xác định");
+            teacher.setEmail("");
+            teacher.setPhone("");
+            
+            model.addAttribute("teacher", teacher);
+            model.addAttribute("classes", new java.util.ArrayList<>());
+            return "teacher/teacher-classes";
         }
 
-        // Lấy các lớp mà teacher phụ trách
-        List<Class> teachingClasses = classService.findClassesByTeacherId(teacher.getId());
-        model.addAttribute("teacher", teacher);
-        model.addAttribute("classes", teachingClasses);
+        try {
+            // Lấy các lớp mà teacher phụ trách
+            List<Class> teachingClasses = classService.findClassesByTeacherId(teacher.getId());
+            model.addAttribute("teacher", teacher);
+            model.addAttribute("classes", teachingClasses);
+        } catch (Exception e) {
+            System.out.println("DEBUG: Exception in showTeacherClasses: " + e.getMessage());
+            e.printStackTrace();
+            model.addAttribute("error", "Có lỗi xảy ra khi tải danh sách lớp học: " + e.getMessage());
+            model.addAttribute("classes", new java.util.ArrayList<>());
+        }
 
         return "teacher/teacher-classes";
     }
@@ -197,7 +219,8 @@ public class TeacherController {
         }
 
         model.addAttribute("teacher", teacher);
-        model.addAttribute("class", teachingClass);
+        // Đổi tên attribute tránh xung đột với SpEL keyword 'class'
+        model.addAttribute("clazz", teachingClass);
         // Tạm thời comment out students vì chưa có relationship
         // model.addAttribute("students", teachingClass.getStudents());
 
@@ -222,32 +245,103 @@ public class TeacherController {
         return "teacher/teacher-grades";
     }
 
-    // Thêm endpoint để lấy điểm của sinh viên
-    @GetMapping("/grades/class/{classId}")
+    // API để lấy điểm của sinh viên theo lớp
+    @GetMapping("/api/grades/class/{classId}")
     @ResponseBody
-    public String getGradesByClass(@PathVariable Long classId) {
+    public org.springframework.http.ResponseEntity<?> getGradesByClass(@PathVariable Long classId) {
         try {
-            // TODO: Implement logic to get grades for specific class
-            return "success";
+            User teacher = getCurrentTeacher();
+            if (teacher == null) {
+                return org.springframework.http.ResponseEntity.badRequest().body("Không tìm thấy thông tin giảng viên!");
+            }
+
+            // Kiểm tra teacher có phụ trách lớp này không
+            List<Class> teachingClasses = classService.findClassesByTeacherId(teacher.getId());
+            boolean isTeaching = teachingClasses.stream().anyMatch(c -> c.getId().equals(classId));
+            
+            if (!isTeaching) {
+                return org.springframework.http.ResponseEntity.badRequest().body("Bạn không phụ trách lớp này!");
+            }
+
+            // Lấy danh sách điểm theo lớp
+            List<Grade> grades = gradeService.findByClassId(classId);
+            
+            java.util.Map<String, Object> response = new java.util.HashMap<>();
+            response.put("success", true);
+            response.put("grades", grades);
+            
+            return org.springframework.http.ResponseEntity.ok(response);
         } catch (Exception e) {
-            return "error";
+            java.util.Map<String, Object> response = new java.util.HashMap<>();
+            response.put("success", false);
+            response.put("message", "Lỗi: " + e.getMessage());
+            return org.springframework.http.ResponseEntity.badRequest().body(response);
         }
     }
 
-    // Thêm endpoint để cập nhật điểm
-    @PostMapping("/grades/update")
+    // API để thêm/cập nhật điểm
+    @PostMapping("/api/grades")
     @ResponseBody
-    public String updateGrade(@RequestParam Long studentId, 
+    public org.springframework.http.ResponseEntity<?> saveGrade(@RequestParam Long studentId, 
                             @RequestParam Long subjectId,
-                            @RequestParam Double grade15,
-                            @RequestParam Double gradeMidterm,
-                            @RequestParam Double gradeAttendance,
-                            @RequestParam Double gradeFinal) {
+                            @RequestParam(required = false) Long classId,
+                            @RequestParam Double midtermScore,
+                            @RequestParam Double finalScore,
+                            @RequestParam Double attendanceScore,
+                            @RequestParam Double assignmentScore,
+                            @RequestParam(required = false) String notes) {
         try {
-            // TODO: Implement logic to update grades
-            return "success";
+            User teacher = getCurrentTeacher();
+            if (teacher == null) {
+                java.util.Map<String, Object> response = new java.util.HashMap<>();
+                response.put("success", false);
+                response.put("message", "Không tìm thấy thông tin giảng viên!");
+                return org.springframework.http.ResponseEntity.badRequest().body(response);
+            }
+
+            // Tạo hoặc cập nhật điểm
+            Grade grade = gradeService.saveGrade(studentId, subjectId, classId, 
+                midtermScore, finalScore, attendanceScore, assignmentScore, notes);
+            
+            java.util.Map<String, Object> response = new java.util.HashMap<>();
+            response.put("success", true);
+            response.put("message", "Lưu điểm thành công!");
+            response.put("grade", grade);
+            
+            return org.springframework.http.ResponseEntity.ok(response);
         } catch (Exception e) {
-            return "error";
+            java.util.Map<String, Object> response = new java.util.HashMap<>();
+            response.put("success", false);
+            response.put("message", "Lỗi: " + e.getMessage());
+            return org.springframework.http.ResponseEntity.badRequest().body(response);
+        }
+    }
+
+    // API để xóa điểm
+    @PostMapping("/api/grades/{gradeId}/delete")
+    @ResponseBody
+    public org.springframework.http.ResponseEntity<?> deleteGrade(@PathVariable Long gradeId) {
+        try {
+            User teacher = getCurrentTeacher();
+            if (teacher == null) {
+                java.util.Map<String, Object> response = new java.util.HashMap<>();
+                response.put("success", false);
+                response.put("message", "Không tìm thấy thông tin giảng viên!");
+                return org.springframework.http.ResponseEntity.badRequest().body(response);
+            }
+
+            gradeService.deleteById(gradeId);
+            
+            java.util.Map<String, Object> response = new java.util.HashMap<>();
+            response.put("success", true);
+            response.put("message", "Xóa điểm thành công!");
+            
+            return org.springframework.http.ResponseEntity.ok(response);
+        } catch (Exception e) {
+            java.util.Map<String, Object> response = new java.util.HashMap<>();
+            response.put("success", false);
+            response.put("message", "Lỗi: " + e.getMessage());
+            return org.springframework.http.ResponseEntity.badRequest().body(response);
         }
     }
 
