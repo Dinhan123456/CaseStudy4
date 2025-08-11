@@ -155,4 +155,11 @@ public class ClassServiceImpl implements IClassService {
     public List<Class> findClassesByTeacherId(Long teacherId) {
         return classRepository.findClassesByTeacherId(teacherId);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Class> findRecentClassesForStudentWithFetch(Long studentId) {
+        return classRepository.findRecentByStudentIdWithFetch(studentId);
+    }
+
 }

@@ -95,4 +95,6 @@ public interface IScheduleService {
                                       LocalDate startDate, LocalDate endDate);
     boolean registerStudentForSchedule(Long studentId, Long scheduleId);
     boolean unregisterStudentFromSchedule(Long studentId, Long scheduleId);
+
+
 }

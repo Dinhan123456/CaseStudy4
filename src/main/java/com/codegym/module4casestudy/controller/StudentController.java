@@ -19,6 +19,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.security.Principal;
+import java.util.Collections;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
@@ -67,59 +69,19 @@ public class StudentController {
     }
 
     @GetMapping("/dashboard")
-    public String showStudentDashboard(Model model) {
-        System.out.println("DEBUG: Entering showStudentDashboard");
-        
-        try {
-            // Kiểm tra authentication
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            System.out.println("DEBUG: Authentication: " + (auth != null ? auth.getName() : "null"));
-            
-            User student = getCurrentStudent();
-            System.out.println("DEBUG: Student object: " + (student != null ? student.getFullName() : "null"));
-            
-            if (student == null) {
-                System.out.println("DEBUG: Student is null, creating dummy student");
-                model.addAttribute("error", "Không tìm thấy thông tin sinh viên! Vui lòng đăng nhập lại.");
-                // Thêm một student mẫu để template không bị lỗi
-                student = new User();
-                student.setUsername("Unknown");
-                student.setFullName("Không xác định");
-                student.setEmail("");
-                student.setPhone("");
-            }
+    public String dashboard(Model model, Principal principal) {
+        var user = userService.findByUsername(principal.getName());
+//        Long studentId = user.getId();
+        Long studentId = user.get().getId();
 
-            // Thống kê cơ bản cho dashboard
-            System.out.println("DEBUG: Getting student classes");
-            List<Class> studentClasses = classService.findAll(); // Tạm thời lấy tất cả, sẽ filter sau
-            System.out.println("DEBUG: Found " + studentClasses.size() + " classes");
-            
-            model.addAttribute("student", student);
-            model.addAttribute("totalClasses", studentClasses.size());
-            model.addAttribute("recentClasses", studentClasses.size() > 3 ? studentClasses.subList(0, 3) : studentClasses);
-            
-            System.out.println("DEBUG: Returning student-panel template");
-            return "student/student-panel";
-            
-        } catch (Exception e) {
-            System.out.println("DEBUG: Exception in showStudentDashboard: " + e.getMessage());
-            e.printStackTrace();
-            model.addAttribute("error", "Có lỗi xảy ra: " + e.getMessage());
-            
-            // Tạo student mẫu để template không bị lỗi
-            User dummyStudent = new User();
-            dummyStudent.setUsername("Unknown");
-            dummyStudent.setFullName("Không xác định");
-            dummyStudent.setEmail("");
-            dummyStudent.setPhone("");
-            
-            model.addAttribute("student", dummyStudent);
-            model.addAttribute("totalClasses", 0);
-            model.addAttribute("recentClasses", new ArrayList<>());
-            
-            return "student/student-panel";
-        }
+        List<Class> recentClasses = classService.findRecentClassesForStudentWithFetch(studentId);
+        model.addAttribute("recentClasses",
+                recentClasses != null ? recentClasses : Collections.emptyList());
+
+        return "student/student-panel";
     }
+
+
 
     @GetMapping("/dashboard-simple")
     public String showStudentDashboardSimple(Model model) {

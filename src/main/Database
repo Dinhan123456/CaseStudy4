@@ -1,78 +1,180 @@
-
 CREATE DATABASE student_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-use student_db;
+USE student_db;
 
-
-
--- BẢNG NGƯỜI DÙNG (Admin / Giáo viên / Sinh viên)
+-- user
 CREATE TABLE users (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
     password VARCHAR(100) NOT NULL,
     full_name VARCHAR(100),
     email VARCHAR(100),
-    phone VARCHAR(20), -- thêm phone
+    phone VARCHAR(20),
     role ENUM('ADMIN', 'TEACHER', 'STUDENT') NOT NULL,
     enabled BOOLEAN DEFAULT TRUE
 );
--- BẢNG LỚP HỌC
+
+---- students
+CREATE TABLE students (
+    id BIGINT PRIMARY KEY,
+    full_name VARCHAR(100),
+    email VARCHAR(100),
+    phone VARCHAR(20),
+    student_code VARCHAR(20) UNIQUE,
+    gender ENUM('M', 'F'),
+    date_of_birth DATE,
+    address TEXT,
+    class_id BIGINT,
+    active BOOLEAN DEFAULT TRUE,
+    FOREIGN KEY (class_id) REFERENCES classes(id)
+);
+
+-- classes
 CREATE TABLE classes (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
-    description TEXT
+    description TEXT,
+    status BOOLEAN DEFAULT TRUE
 );
--- GIÁO VIÊN PHỤ TRÁCH LỚP
-CREATE TABLE teacher_class (
+
+-- teacher-class
+
+ CREATE TABLE teacher_class (
     teacher_id BIGINT,
     class_id BIGINT,
     PRIMARY KEY (teacher_id, class_id),
     FOREIGN KEY (teacher_id) REFERENCES users(id),
     FOREIGN KEY (class_id) REFERENCES classes(id)
 );
--- SINH VIÊN TRONG LỚP
-CREATE TABLE student_class (
-    student_id BIGINT,
-    class_id BIGINT,
-    PRIMARY KEY (student_id, class_id),
-    FOREIGN KEY (student_id) REFERENCES users(id),
-    FOREIGN KEY (class_id) REFERENCES classes(id)
-);
--- MÔN HỌC
+
+-- subject
 CREATE TABLE subjects (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    credits INT DEFAULT 3,
+    active BOOLEAN DEFAULT TRUE
 );
 
--- LỚP HỌC DẠY MÔN NÀO, DO AI GIẢNG DẠY
-CREATE TABLE class_subject (
+-- class-subject
+ CREATE TABLE class_subject (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
     class_id BIGINT,
     subject_id BIGINT,
     teacher_id BIGINT,
-    PRIMARY KEY (class_id, subject_id),
     FOREIGN KEY (class_id) REFERENCES classes(id),
     FOREIGN KEY (subject_id) REFERENCES subjects(id),
     FOREIGN KEY (teacher_id) REFERENCES users(id)
 );
--- BẢNG ĐIỂM
+
+-- grades
 CREATE TABLE grades (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     student_id BIGINT,
     subject_id BIGINT,
     score FLOAT,
-    FOREIGN KEY (student_id) REFERENCES users(id),
+    FOREIGN KEY (student_id) REFERENCES students(id),
     FOREIGN KEY (subject_id) REFERENCES subjects(id)
 );
--- THỜI KHÓA BIỂU (lịch học/lịch dạy)
+
+-- rooms
+CREATE TABLE rooms (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    room_code VARCHAR(20),
+    room_name VARCHAR(100),
+    building VARCHAR(100),
+    floor INT,
+    capacity INT,
+    equipment TEXT,
+    room_type VARCHAR(50),
+    active BOOLEAN DEFAULT TRUE
+);
+
+--time-slots
+CREATE TABLE time_slots (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    period_name VARCHAR(50),
+    period_number INT,
+    start_time TIME,
+    end_time TIME,
+    is_break BOOLEAN DEFAULT FALSE,
+    active BOOLEAN DEFAULT TRUE
+);
+
+-- timetable
 CREATE TABLE timetables (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    class_id BIGINT NOT NULL,
-    subject_id BIGINT NOT NULL,
-    teacher_id BIGINT NOT NULL,
-    room VARCHAR(50),                     -- Phòng học (A101, B203, v.v.)
-    day_of_week ENUM('MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN') NOT NULL,
-    start_time TIME NOT NULL,            -- Giờ bắt đầu
-    end_time TIME NOT NULL,              -- Giờ kết thúc
+    class_id BIGINT,
+    subject_id BIGINT,
+    teacher_id BIGINT,
+    room VARCHAR(50),
+    day_of_week ENUM('MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'),
+    start_time TIME,
+    end_time TIME,
     FOREIGN KEY (class_id) REFERENCES classes(id),
     FOREIGN KEY (subject_id) REFERENCES subjects(id),
     FOREIGN KEY (teacher_id) REFERENCES users(id)
+);
+
+-- schedules
+ CREATE TABLE schedules (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    class_id BIGINT,
+    subject_id BIGINT,
+    teacher_id BIGINT,
+    room_id BIGINT,
+    time_slot_id BIGINT,
+    day_of_week ENUM('MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'),
+    start_date DATE,
+    end_date DATE,
+    notes TEXT,
+    active BOOLEAN DEFAULT TRUE,
+    status VARCHAR(50),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by VARCHAR(100),
+    FOREIGN KEY (class_id) REFERENCES classes(id),
+    FOREIGN KEY (subject_id) REFERENCES subjects(id),
+    FOREIGN KEY (teacher_id) REFERENCES users(id),
+    FOREIGN KEY (room_id) REFERENCES rooms(id),
+    FOREIGN KEY (time_slot_id) REFERENCES time_slots(id)
+);
+
+-- register-periods
+CREATE TABLE registration_periods (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    period_name VARCHAR(100),
+    description TEXT,
+    start_time DATETIME,
+    end_time DATETIME,
+    max_credits_per_student INT,
+    max_subjects_per_student INT,
+    status VARCHAR(50),
+    active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by VARCHAR(100)
+);
+
+-- sudent-register
+CREATE TABLE student_registrations (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    student_id BIGINT,
+    schedule_id BIGINT,
+    registration_period_id BIGINT,
+    status VARCHAR(50),
+    active BOOLEAN DEFAULT TRUE,
+    registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    notes TEXT,
+    FOREIGN KEY (student_id) REFERENCES students(id),
+    FOREIGN KEY (schedule_id) REFERENCES schedules(id),
+    FOREIGN KEY (registration_period_id) REFERENCES registration_periods(id)
+);
+
+-- student-class
+CREATE TABLE student_class (
+    student_id BIGINT,
+    class_id BIGINT,
+    PRIMARY KEY (student_id, class_id),
+    FOREIGN KEY (student_id) REFERENCES students(id),
+    FOREIGN KEY (class_id) REFERENCES classes(id)
 );
