@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Quản Lý Sinh Viên</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+<!--    <link rel="stylesheet" th:href="@{/home/home.css}">-->
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #ffffff;
+            font-family: 'Segoe UI', sans-serif;
+            color: #111;
+        }
+
+        .topbar {
+            background: black;
+            color: white;
+            padding: 15px 20px;
+            z-index: 999;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .alert-top-static {
+            width: 100%;
+            margin: 0;
+            border-radius: 0;
+        }
+
+        .logo {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .btn-login a {
+            background: white;
+            color: black;
+            padding: 5px 15px;
+            border-radius: 20px;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .btn-login a:hover {
+            background: #f0f0f0;
+        }
+
+        @media (max-width: 640px) {
+            .topbar div:first-child {
+                font-size: 0.9rem;
+            }
+
+            .btn-login a {
+                font-size: 0.8rem;
+                padding: 0.3rem 0.6rem;
+            }
+        }
+
+        .logo {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        .logo::before {
+            content: '\25B2';
+            color: white;
+            margin-right: 6px;
+        }
+
+        .menu-btn {
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 16px;
+            color: #111;
+        }
+
+        .btn-login {
+            position: relative;
+        }
+
+        .btn-login a {
+            font-weight: 500;
+            border-radius: 999px;
+            padding: 6px 16px;
+            font-size: 14px;
+            background-color: black;
+            color: white;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-login a:hover {
+            background-color: #333;
+            color: #fff;
+            transform: translateY(-2px);
+        }
+
+        header {
+            background: transparent;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        section {
+            padding: 60px 0;
+        }
+
+        section h2 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 48px;
+            color: #111;
+        }
+
+        .feature-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 0 0 1px #e5e5e5; /* border mảnh, tinh tế */
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            height: 100%;
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            display: block;
+            color: black;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: black;
+        }
+
+        .row.text-center > div {
+            padding: 20px;
+            border-top: 1px solid #eee;
+            border-bottom: 1px solid #eee;
+        }
+
+        .row.text-center > div:hover {
+            background: #f9f9f9;
+            transition: 0.3s ease;
+        }
+
+        .row h5 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #111;
+        }
+
+        .row p {
+            font-size: 14px;
+            color: #555;
+        }
+
+        footer {
+            background: black;
+            color: #ccc;
+            padding: 16px;
+            font-size: 14px;
+        }
+
+
+        .hero-section {
+            background: white;
+            color: black;
+            padding: 80px 0;
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .feature-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            height: 100%;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .stats-section {
+            background: #f8f9fa;
+            padding: 60px 0;
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 30px;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .cta-section {
+            background: white;
+            color: black;
+            padding: 80px 0;
+            text-align: center;
+            border-top: 1px solid #ddd;
+        }
+
+        .btn-custom {
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            background-color: black;
+            color: white;
+            border: none;
+        }
+
+
+        .btn-custom:hover {
+            background-color: #333;
+            color: #fff;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        .hero-section {
+            background: white;
+            color: black;
+            padding: 80px 0;
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .feature-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            height: 100%;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .stats-section {
+            background: #f8f9fa;
+            padding: 60px 0;
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 30px;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .cta-section {
+            background: white;
+            color: black;
+            padding: 80px 0;
+            text-align: center;
+            border-top: 1px solid #ddd;
+        }
+
+        .btn-custom {
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            background-color: black;
+            color: white;
+            border: none;
+        }
+
+
+        .btn-custom:hover {
+            background-color: #333;
+            color: #fff;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+<!-- Hiển thị thông báo logout nếu có -->
+
+<div th:if="${param.logout}" class="alert alert-success alert-dismissible fade show alert-top-fixed" role="alert">
+    <i class="bi bi-check-circle"></i> Bạn đã đăng xuất thành công!
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+
+<header class="w-full">
+    <div class="topbar">
+        <div class="logo">Giáo dục</div>
+        <div class="btn-login">
+            <a href="/login" class="flex items-center gap-2">
+                <i class="bi bi-file-earmark-person"></i>
+                <span>Đăng nhập</span>
+            </a>
+        </div>
+    </div>
+</header>
+
+
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container">
+        <h1 class="display-3 fw-bold mb-4">Hệ Thống Quản Lý Sinh Viên</h1>
+        <p class="lead mb-5">Quản lý sinh viên, khoá học và giảng viên một cách dễ dàng, hiệu quả với công nghệ hiện đại.</p>
+        <div class="d-flex justify-content-center gap-3">
+            <a th:href="@{/login}" class="btn btn-light btn-custom">
+                <i class="bi bi-box-arrow-in-right me-2"></i> Đăng nhập hệ thống
+            </a>
+            <a href="#features" class="btn btn-outline-light btn-custom">
+                <i class="bi bi-info-circle me-2"></i> Tìm hiểu thêm
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section id="features" class="py-5">
+    <div class="container">
+        <h2 class="text-center mb-5 display-5 fw-bold">Chức năng chính</h2>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <i class="bi bi-people-fill feature-icon text-primary"></i>
+                    <h5 class="fw-bold mb-3">Quản lý sinh viên</h5>
+                    <p class="text-muted">Thêm, sửa, xoá và theo dõi tiến độ học tập của sinh viên một cách chi tiết và hiệu quả.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <i class="bi bi-book-fill feature-icon text-success"></i>
+                    <h5 class="fw-bold mb-3">Quản lý khoá học</h5>
+                    <p class="text-muted">Tạo môn học, sắp xếp thời khoá biểu và phân công giảng viên phụ trách một cách linh hoạt.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <i class="bi bi-shield-check feature-icon text-warning"></i>
+                    <h5 class="fw-bold mb-3">Phân quyền người dùng</h5>
+                    <p class="text-muted">Phân quyền rõ ràng giữa admin, giảng viên và sinh viên với bảo mật cao.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Stats Section -->
+<section class="stats-section">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-number">500+</div>
+                    <p class="text-muted">Sinh viên</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-number">50+</div>
+                    <p class="text-muted">Giảng viên</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-number">30+</div>
+                    <p class="text-muted">Môn học</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-number">20+</div>
+                    <p class="text-muted">Lớp học</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="cta-section">
+    <div class="container">
+        <h2 class="display-5 fw-bold mb-4">Sẵn sàng bắt đầu?</h2>
+        <p class="lead mb-5">Tham gia hệ thống quản lý sinh viên hiện đại ngay hôm nay!</p>
+        <a th:href="@{/login}" class="btn btn-light btn-custom">
+            <i class="bi bi-box-arrow-in-right me-2"></i> Đăng nhập ngay
+        </a>
+    </div>
+</section>
+
+<footer class="text-center py-4 bg-dark text-light">
+    <div class="container">
+        <p class="mb-0">©2025 Hệ thống Quản lý Sinh viên. All rights reserved.</p>
+    </div>
+</footer>
+
+<script>
+    // You can add JavaScript functionality here if needed
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Topbar loaded');
+    });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

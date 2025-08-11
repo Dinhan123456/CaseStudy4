@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title th:text="#{login.title}">Trang Đăng Nhập</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  <link rel="stylesheet" th:href="@{/login/login.css}">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</head>
+<body>
+<div class="login-container">
+  <div class="login-header">
+    <i class="fas fa-user-circle fa-2x"></i>
+      <div class="mt-2">ĐĂNG NHẬP HỆ THỐNG</div>
+  </div>
+  <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+  <div th:if="${message}" class="alert alert-success" th:text="${message}"></div>
+  <form th:action="@{/login}" method="post">
+    <div class="icon-input">
+      <i class="fas fa-envelope"></i>
+      <input type="text" class="form-control" name="username" placeholder="Email hoặc ID" required>
+    </div>
+    <div class="icon-input">
+      <i class="fas fa-lock"></i>
+      <input type="password" class="form-control" name="password" placeholder="Mật khẩu" required>
+    </div>
+    <div class="remember-line">
+      <div>
+        <input type="checkbox" id="remember" name="remember-me">
+        <label for="remember">Ghi nhớ</label>
+      </div>
+      <a href="#" class="text-decoration-none" data-bs-toggle="modal" data-bs-target="#forgotPasswordModal">Quên mật khẩu?</a>
+    </div>
+    <div class="d-grid">
+      <button type="submit" class="btn btn-login">ĐĂNG NHẬP</button>
+    </div>
+  </form>
+</div>
+
+<!-- Modal Quên mật khẩu -->
+<div class="modal fade" id="forgotPasswordModal" tabindex="-1" aria-labelledby="forgotPasswordModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="forgotPasswordModalLabel">
+          <i class="fas fa-key me-2"></i>Quên mật khẩu
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted mb-3">Nhập email của bạn để nhận link đặt lại mật khẩu.</p>
+        <form id="forgotPasswordForm">
+          <div class="mb-3">
+            <label for="email" class="form-label">Email</label>
+            <input type="email" class="form-control" id="email" name="email" required 
+                   placeholder="Nhập email của bạn">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+        <button type="button" class="btn btn-primary" onclick="sendResetPassword()">
+          <i class="fas fa-paper-plane me-1"></i>Gửi email
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Form validation
+    const loginForm = document.querySelector('form[th\\:action="@{/login}"]');
+    if (loginForm) {
+        loginForm.addEventListener('submit', function(event) {
+            const username = this.querySelector('input[name="username"]').value.trim();
+            const password = this.querySelector('input[name="password"]').value.trim();
+            
+            if (!username) {
+                event.preventDefault();
+                alert('Vui lòng nhập email hoặc ID!');
+                return;
+            }
+            
+            if (!password) {
+                event.preventDefault();
+                alert('Vui lòng nhập mật khẩu!');
+                return;
+            }
+            
+            // Hiển thị loading
+            const submitBtn = this.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Đang đăng nhập...';
+                submitBtn.disabled = true;
+            }
+        });
+    }
+});
+
+function sendResetPassword() {
+    const email = document.getElementById('email').value.trim();
+    
+    if (!email) {
+        alert('Vui lòng nhập email!');
+        return;
+    }
+    
+    if (!email.includes('@')) {
+        alert('Email không hợp lệ!');
+        return;
+    }
+    
+    // Hiển thị loading
+    const submitBtn = document.querySelector('#forgotPasswordModal .btn-primary');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Đang gửi...';
+    submitBtn.disabled = true;
+    
+    // Giả lập gửi email (trong thực tế sẽ gọi API)
+    setTimeout(() => {
+        // Đóng modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('forgotPasswordModal'));
+        modal.hide();
+        
+        // Reset form
+        document.getElementById('forgotPasswordForm').reset();
+        
+        // Hiển thị thông báo thành công
+        showNotification('Email đặt lại mật khẩu đã được gửi! Vui lòng kiểm tra hộp thư của bạn.', 'success');
+        
+        // Reset button
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }, 2000);
+}
+
+function showNotification(message, type = 'info') {
+    // Tạo thông báo Bootstrap
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    // Tự động ẩn sau 5 giây
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+</script>
+
+</body>
+</html>
