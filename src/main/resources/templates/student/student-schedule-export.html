@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sinh Viên - Xuất Lịch Học</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/student/student-panel.css}">
+    <style>
+        .export-option {
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .export-option:hover {
+            border-color: #007bff;
+            box-shadow: 0 4px 8px rgba(0, 123, 255, 0.2);
+        }
+        .export-option.selected {
+            border-color: #007bff;
+            background-color: #f8f9fa;
+        }
+        .format-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        .preview-container {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .schedule-table {
+            font-size: 0.9em;
+        }
+        .time-slot {
+            background: linear-gradient(45deg, #007bff, #6610f2);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            display: inline-block;
+        }
+        .subject-badge {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 0.75em;
+        }
+        .filter-section {
+            background: #fff;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .custom-range {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            border: 2px solid #dee2e6;
+        }
+        .export-summary {
+            background: linear-gradient(135deg, #007bff, #6610f2);
+            color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .calendar-preview {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .calendar-header {
+            background: #007bff;
+            color: white;
+            padding: 10px;
+            font-weight: bold;
+            text-align: center;
+        }
+        .calendar-day {
+            border: 1px solid #eee;
+            padding: 8px;
+            min-height: 80px;
+            font-size: 0.8em;
+        }
+        .calendar-event {
+            background: #007bff;
+            color: white;
+            border-radius: 3px;
+            padding: 2px 4px;
+            margin: 1px 0;
+            font-size: 0.7em;
+        }
+    </style>
+</head>
+<body>
+<div class="wrapper">
+    <!-- Header -->
+    <header class="header">
+        <div class="menu-toggle" onclick="toggleSidebar()">
+            <i class="fas fa-bars"></i>
+        </div>
+        <div class="user-info">
+            <span class="user-name" th:text="${student?.fullName}">Student Name</span>
+            <i class="fas fa-user me-2" onclick="toggleLogoutDropdown()"></i>
+            <div id="logoutDropdown" class="logout-dropdown">
+                <form th:action="@{/logout}" method="post">
+                    <button type="submit" class="btn btn-sm btn-outline-danger w-100">Logout</button>
+                </form>
+            </div>
+        </div>
+    </header>
+
+    <!-- Sidebar -->
+    <div class="sidebar" id="studentSidebar">
+        <div class="sidebar-header">
+            <h4><i class="fas fa-user-graduate me-2"></i>Student Panel</h4>
+        </div>
+        <a th:href="@{/student/dashboard}" class="sidebar-link">
+            <i class="fas fa-home me-2"></i>Trang chủ
+        </a>
+        <a th:href="@{/student/profile}">
+            <i class="fas fa-user me-2"></i>Thông tin cá nhân
+        </a>
+        <a th:href="@{/student/classes}">
+            <i class="fas fa-chalkboard me-2"></i>Lớp học của tôi
+        </a>
+        <a th:href="@{/student/grades}">
+            <i class="fas fa-chart-bar me-2"></i>Điểm số
+        </a>
+        <a th:href="@{/student/schedule}" class="sidebar-link active">
+            <i class="fas fa-calendar-alt me-2"></i>Lịch học
+        </a>
+        <a th:href="@{/student/course-registration}">
+            <i class="fas fa-edit me-2"></i>Đăng ký học phần
+        </a>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a th:href="@{/student/dashboard}">Trang chủ</a></li>
+                <li class="breadcrumb-item"><a th:href="@{/student/schedule}">Lịch học</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Xuất lịch học</li>
+            </ol>
+        </nav>
+
+        <!-- Success/Error Messages -->
+        <div th:if="${message}" class="alert alert-success mb-4">
+            <i class="fas fa-check-circle me-2"></i>
+            <span th:text="${message}"></span>
+        </div>
+        
+        <div th:if="${error}" class="alert alert-danger mb-4">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            <span th:text="${error}"></span>
+        </div>
+
+        <!-- Page Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2><i class="fas fa-download me-3"></i>Xuất Lịch Học</h2>
+                <p class="text-muted">Tùy chỉnh và xuất lịch học theo nhu cầu</p>
+            </div>
+            <a th:href="@{/student/schedule}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Quay Lại
+            </a>
+        </div>
+
+        <!-- Export Summary -->
+        <div class="export-summary">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h5 class="mb-1"><i class="fas fa-calendar-check me-2"></i>Lịch Học Của Tôi</h5>
+                    <p class="mb-0">Xuất lịch học cá nhân theo thời gian và định dạng mong muốn</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <h4 class="mb-0" th:text="${totalSchedules ?: 0}">12</h4>
+                    <small>Môn học trong kỳ</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Export Configuration -->
+            <div class="col-lg-8">
+                <form id="exportForm" th:action="@{/student/schedule/export}" method="post">
+                    <!-- Time Range Selection -->
+                    <div class="filter-section">
+                        <h5><i class="fas fa-calendar-range me-2"></i>Khoảng Thời Gian</h5>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="timeRange" id="currentSemester" value="current" checked onchange="updateTimeRange()">
+                                    <label class="form-check-label" for="currentSemester">
+                                        <strong>Học kỳ hiện tại</strong><br>
+                                        <small class="text-muted" th:text="${currentSemester?.name}">Học kỳ 1, 2023-2024</small>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="timeRange" id="nextWeek" value="week" onchange="updateTimeRange()">
+                                    <label class="form-check-label" for="nextWeek">
+                                        <strong>Tuần tới</strong><br>
+                                        <small class="text-muted">7 ngày từ hôm nay</small>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="timeRange" id="nextMonth" value="month" onchange="updateTimeRange()">
+                                    <label class="form-check-label" for="nextMonth">
+                                        <strong>Tháng tới</strong><br>
+                                        <small class="text-muted">30 ngày từ hôm nay</small>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-12 mt-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="timeRange" id="customRange" value="custom" onchange="updateTimeRange()">
+                                <label class="form-check-label" for="customRange">
+                                    <strong>Tùy chỉnh khoảng thời gian</strong>
+                                </label>
+                            </div>
+                            <div id="customDateRange" class="custom-range mt-2" style="display: none;">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <label for="startDate" class="form-label">Từ ngày:</label>
+                                        <input type="date" class="form-control" id="startDate" name="startDate" th:value="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="endDate" class="form-label">Đến ngày:</label>
+                                        <input type="date" class="form-control" id="endDate" name="endDate">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Subject Filter -->
+                    <div class="filter-section">
+                        <h5><i class="fas fa-filter me-2"></i>Lọc Môn Học</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="subjectFilter" id="allSubjects" value="all" checked>
+                                    <label class="form-check-label" for="allSubjects">
+                                        <strong>Tất cả môn học</strong>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="subjectFilter" id="selectedSubjects" value="selected">
+                                    <label class="form-check-label" for="selectedSubjects">
+                                        <strong>Chỉ môn học đã chọn</strong>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="subjectList" class="mt-3" style="display: none;">
+                            <div class="row">
+                                <div th:each="schedule : ${schedules}" class="col-md-6 mb-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" th:id="'subject' + ${schedule.id}" th:value="${schedule.id}" name="selectedScheduleIds">
+                                        <label class="form-check-label" th:for="'subject' + ${schedule.id}">
+                                            <span th:text="${schedule.subject?.name}">Subject Name</span><br>
+                                            <small class="text-muted" th:text="${schedule.classEntity?.name}">Class Name</small>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Export Format Selection -->
+                    <div class="filter-section">
+                        <h5><i class="fas fa-file-export me-2"></i>Định Dạng Xuất</h5>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="export-option text-center" onclick="selectFormat('pdf')">
+                                    <input type="radio" name="exportFormat" value="pdf" id="formatPdf" checked style="display: none;">
+                                    <i class="fas fa-file-pdf text-danger format-icon"></i>
+                                    <h6>PDF</h6>
+                                    <small class="text-muted">Tài liệu in ấn</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="export-option text-center" onclick="selectFormat('excel')">
+                                    <input type="radio" name="exportFormat" value="excel" id="formatExcel" style="display: none;">
+                                    <i class="fas fa-file-excel text-success format-icon"></i>
+                                    <h6>Excel</h6>
+                                    <small class="text-muted">Bảng tính</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="export-option text-center" onclick="selectFormat('ical')">
+                                    <input type="radio" name="exportFormat" value="ical" id="formatIcal" style="display: none;">
+                                    <i class="fas fa-calendar text-primary format-icon"></i>
+                                    <h6>iCal</h6>
+                                    <small class="text-muted">Lịch điện tử</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="export-option text-center" onclick="selectFormat('json')">
+                                    <input type="radio" name="exportFormat" value="json" id="formatJson" style="display: none;">
+                                    <i class="fas fa-code text-warning format-icon"></i>
+                                    <h6>JSON</h6>
+                                    <small class="text-muted">Dữ liệu</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Additional Options -->
+                    <div class="filter-section">
+                        <h5><i class="fas fa-cogs me-2"></i>Tùy Chọn Bổ Sung</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="includeTeacher" name="includeTeacher" checked>
+                                    <label class="form-check-label" for="includeTeacher">
+                                        Bao gồm thông tin giảng viên
+                                    </label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="includeRoom" name="includeRoom" checked>
+                                    <label class="form-check-label" for="includeRoom">
+                                        Bao gồm thông tin phòng học
+                                    </label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="includeGrades" name="includeGrades">
+                                    <label class="form-check-label" for="includeGrades">
+                                        Bao gồm điểm số hiện tại
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="includeAttendance" name="includeAttendance">
+                                    <label class="form-check-label" for="includeAttendance">
+                                        Bao gồm thông tin điểm danh
+                                    </label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="colorCoded" name="colorCoded" checked>
+                                    <label class="form-check-label" for="colorCoded">
+                                        Phân biệt màu sắc theo môn học
+                                    </label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="includeNotes" name="includeNotes">
+                                    <label class="form-check-label" for="includeNotes">
+                                        Thêm ghi chú cá nhân
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="notesSection" class="mt-3" style="display: none;">
+                            <label for="personalNotes" class="form-label">Ghi chú cá nhân:</label>
+                            <textarea class="form-control" id="personalNotes" name="personalNotes" rows="3" placeholder="Thêm ghi chú cho lịch học..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Export Buttons -->
+                    <div class="text-center">
+                        <button type="button" class="btn btn-info me-2" onclick="previewSchedule()">
+                            <i class="fas fa-eye me-2"></i>Xem Trước
+                        </button>
+                        <button type="submit" class="btn btn-success me-2">
+                            <i class="fas fa-download me-2"></i>Xuất Lịch
+                        </button>
+                        <button type="button" class="btn btn-primary" onclick="shareSchedule()">
+                            <i class="fas fa-share me-2"></i>Chia Sẻ
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Preview Panel -->
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-eye me-2"></i>Xem Trước
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="previewContent" class="preview-container">
+                            <!-- Preview will be loaded here -->
+                            <div class="text-center text-muted">
+                                <i class="fas fa-calendar-alt fa-3x mb-3"></i>
+                                <p>Nhấn "Xem Trước" để hiển thị lịch học</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-chart-pie me-2"></i>Thống Kê Nhanh
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <h5 class="text-primary" th:text="${totalSchedules ?: 0}">12</h5>
+                                <small class="text-muted">Môn học</small>
+                            </div>
+                            <div class="col-6">
+                                <h5 class="text-success" th:text="${totalCredits ?: 0}">36</h5>
+                                <small class="text-muted">Tín chỉ</small>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <h5 class="text-info" th:text="${totalSessions ?: 0}">180</h5>
+                                <small class="text-muted">Buổi học</small>
+                            </div>
+                            <div class="col-6">
+                                <h5 class="text-warning" th:text="${averageGrade ?: 'N/A'}">8.2</h5>
+                                <small class="text-muted">Điểm TB</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Export History -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-history me-2"></i>Lịch Sử Xuất
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div th:each="export : ${exportHistory}" class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <small class="fw-bold" th:text="${export.fileName}">schedule_2024.pdf</small><br>
+                                <small class="text-muted" th:text="${#temporals.format(export.createdAt, 'dd/MM/yyyy HH:mm')}">01/01/2024 10:30</small>
+                            </div>
+                            <a th:href="@{/student/schedule/download/{id}(id=${export.id})}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-download"></i>
+                            </a>
+                        </div>
+                        <div th:if="${#lists.isEmpty(exportHistory)}" class="text-center text-muted">
+                            <i class="fas fa-file-export fa-2x mb-2"></i>
+                            <p>Chưa có lịch sử xuất</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function toggleSidebar() {
+    const sidebar = document.getElementById('studentSidebar');
+    sidebar.classList.toggle('active');
+}
+
+function toggleLogoutDropdown() {
+    const dropdown = document.getElementById('logoutDropdown');
+    dropdown.classList.toggle('show');
+}
+
+function updateTimeRange() {
+    const customRange = document.getElementById('customDateRange');
+    const customRadio = document.getElementById('customRange');
+    
+    if (customRadio.checked) {
+        customRange.style.display = 'block';
+    } else {
+        customRange.style.display = 'none';
+    }
+}
+
+function selectFormat(format) {
+    // Remove selected class from all options
+    document.querySelectorAll('.export-option').forEach(option => {
+        option.classList.remove('selected');
+    });
+    
+    // Add selected class to clicked option
+    event.currentTarget.classList.add('selected');
+    
+    // Check the corresponding radio button
+    document.getElementById('format' + format.charAt(0).toUpperCase() + format.slice(1)).checked = true;
+    
+    // Update preview based on format
+    updateFormatPreview(format);
+}
+
+function updateFormatPreview(format) {
+    const preview = document.getElementById('previewContent');
+    let content = '';
+    
+    switch(format) {
+        case 'pdf':
+            content = `
+                <div class="text-center">
+                    <i class="fas fa-file-pdf text-danger fa-2x mb-2"></i>
+                    <h6>PDF Document</h6>
+                    <small class="text-muted">Định dạng tài liệu in ấn chuyên nghiệp</small>
+                </div>
+            `;
+            break;
+        case 'excel':
+            content = `
+                <div class="text-center">
+                    <i class="fas fa-file-excel text-success fa-2x mb-2"></i>
+                    <h6>Excel Spreadsheet</h6>
+                    <small class="text-muted">Bảng tính có thể chỉnh sửa và phân tích</small>
+                </div>
+            `;
+            break;
+        case 'ical':
+            content = `
+                <div class="text-center">
+                    <i class="fas fa-calendar text-primary fa-2x mb-2"></i>
+                    <h6>iCalendar File</h6>
+                    <small class="text-muted">Import vào ứng dụng lịch</small>
+                </div>
+            `;
+            break;
+        case 'json':
+            content = `
+                <div class="text-center">
+                    <i class="fas fa-code text-warning fa-2x mb-2"></i>
+                    <h6>JSON Data</h6>
+                    <small class="text-muted">Dữ liệu có cấu trúc cho phát triển</small>
+                </div>
+            `;
+            break;
+    }
+    
+    preview.innerHTML = content;
+}
+
+function previewSchedule() {
+    const preview = document.getElementById('previewContent');
+    const format = document.querySelector('input[name="exportFormat"]:checked').value;
+    
+    // Show loading
+    preview.innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Đang tạo xem trước...</p>
+        </div>
+    `;
+    
+    // Simulate preview generation
+    setTimeout(() => {
+        generatePreview(format);
+    }, 1000);
+}
+
+function generatePreview(format) {
+    const preview = document.getElementById('previewContent');
+    
+    if (format === 'pdf') {
+        preview.innerHTML = `
+            <div class="calendar-preview">
+                <div class="calendar-header">Lịch Học Tuần</div>
+                <div class="row g-0">
+                    <div class="col calendar-day">
+                        <strong>Thứ 2</strong>
+                        <div class="calendar-event">Java Programming</div>
+                        <div class="calendar-event">Database</div>
+                    </div>
+                    <div class="col calendar-day">
+                        <strong>Thứ 3</strong>
+                        <div class="calendar-event">Web Development</div>
+                    </div>
+                    <div class="col calendar-day">
+                        <strong>Thứ 4</strong>
+                        <div class="calendar-event">English</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    } else if (format === 'excel') {
+        preview.innerHTML = `
+            <table class="table table-sm schedule-table">
+                <thead>
+                    <tr class="table-primary">
+                        <th>Thứ</th>
+                        <th>Giờ</th>
+                        <th>Môn học</th>
+                        <th>Phòng</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Thứ 2</td>
+                        <td><span class="time-slot">08:00-09:30</span></td>
+                        <td><span class="subject-badge">Java</span></td>
+                        <td>A101</td>
+                    </tr>
+                    <tr>
+                        <td>Thứ 3</td>
+                        <td><span class="time-slot">10:00-11:30</span></td>
+                        <td><span class="subject-badge">Web</span></td>
+                        <td>B202</td>
+                    </tr>
+                </tbody>
+            </table>
+        `;
+    } else {
+        preview.innerHTML = `
+            <div class="text-center">
+                <i class="fas fa-calendar-check text-success fa-2x mb-2"></i>
+                <h6>Preview Ready</h6>
+                <p class="small text-muted">Lịch học sẽ được xuất theo định dạng ${format.toUpperCase()}</p>
+            </div>
+        `;
+    }
+}
+
+function shareSchedule() {
+    if (navigator.share) {
+        navigator.share({
+            title: 'Lịch Học Của Tôi',
+            text: 'Chia sẻ lịch học với bạn bè',
+            url: window.location.href
+        });
+    } else {
+        // Fallback: copy to clipboard
+        navigator.clipboard.writeText(window.location.href).then(() => {
+            alert('Đã sao chép link chia sẻ vào clipboard!');
+        });
+    }
+}
+
+// Subject filter toggle
+document.addEventListener('DOMContentLoaded', function() {
+    const selectedSubjectsRadio = document.getElementById('selectedSubjects');
+    const subjectList = document.getElementById('subjectList');
+    
+    document.querySelectorAll('input[name="subjectFilter"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (selectedSubjectsRadio.checked) {
+                subjectList.style.display = 'block';
+            } else {
+                subjectList.style.display = 'none';
+            }
+        });
+    });
+    
+    // Notes toggle
+    const includeNotesCheckbox = document.getElementById('includeNotes');
+    const notesSection = document.getElementById('notesSection');
+    
+    includeNotesCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            notesSection.style.display = 'block';
+        } else {
+            notesSection.style.display = 'none';
+        }
+    });
+    
+    // Initialize format selection
+    selectFormat('pdf');
+});
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(event) {
+    const dropdown = document.getElementById('logoutDropdown');
+    const userInfo = document.querySelector('.user-info');
+    
+    if (!userInfo.contains(event.target)) {
+        dropdown.classList.remove('show');
+    }
+});
+</script>
+</body>
+</html>

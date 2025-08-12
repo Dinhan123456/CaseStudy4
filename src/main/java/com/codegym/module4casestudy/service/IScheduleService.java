@@ -46,6 +46,17 @@ public interface IScheduleService {
     
     // Tìm lịch theo trạng thái
     List<Schedule> findByStatus(Schedule.ScheduleStatus status);
+    
+    // Conflict checking methods - để đảm bảo unique constraints
+    boolean hasTeacherConflict(Long teacherId, Integer dayOfWeek, Long timeSlotId, LocalDate startDate, LocalDate endDate);
+    boolean hasRoomConflict(Long roomId, Integer dayOfWeek, Long timeSlotId, LocalDate startDate, LocalDate endDate);
+    boolean hasClassConflict(Long classId, Integer dayOfWeek, Long timeSlotId, LocalDate startDate, LocalDate endDate);
+    
+    // Kiểm tra tất cả conflicts cho một schedule mới
+    List<String> checkScheduleConflicts(Schedule schedule);
+    
+    // Validate và save schedule với conflict checking
+    Schedule saveWithConflictCheck(Schedule schedule) throws IllegalStateException;
 
 
 

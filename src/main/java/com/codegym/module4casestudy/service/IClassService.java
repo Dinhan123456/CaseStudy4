@@ -31,9 +31,13 @@ public interface IClassService {
     boolean existsByNameAndIdNot(String name, Long id);
 
     // Quản lý sinh viên trong lớp
-
-    void addStudentToClass(Long classId, Long studentId);
+    void addStudentToClass(Long classId, Long studentId) throws IllegalStateException;
     void removeStudentFromClass(Long classId, Long studentId);
+
+    // Capacity checking methods
+    boolean canAddStudentToClass(Long classId);
+    int getAvailableSlots(Long classId);
+    boolean isClassFull(Long classId);
 
     // Quản lý giảng viên trong lớp
     void addTeacherToClass(Long classId, Long teacherId);

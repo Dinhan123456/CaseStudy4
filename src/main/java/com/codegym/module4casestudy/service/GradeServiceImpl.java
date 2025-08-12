@@ -8,6 +8,7 @@ import com.codegym.module4casestudy.repository.GradeRepository;
 import com.codegym.module4casestudy.repository.ClassRepository;
 import com.codegym.module4casestudy.repository.SubjectRepository;
 import com.codegym.module4casestudy.repository.UserRepository;
+import com.codegym.module4casestudy.repository.ClassSubjectRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +33,9 @@ public class GradeServiceImpl implements IGradeService {
     @Autowired
     private ClassRepository classRepository;
     
+    @Autowired
+    private ClassSubjectRepository classSubjectRepository;
+    
     @Override
     public List<Grade> findAll() {
         return gradeRepository.findAll();
@@ -51,6 +55,9 @@ public class GradeServiceImpl implements IGradeService {
     
     @Override
     public Grade save(Grade grade) {
+        // Validation trước khi save
+        validateGradeConstraints(grade, null);
+        
         grade.setUpdatedAt(LocalDateTime.now());
         return gradeRepository.save(grade);
     }
@@ -60,6 +67,10 @@ public class GradeServiceImpl implements IGradeService {
         Optional<Grade> existingGrade = gradeRepository.findById(id);
         if (existingGrade.isPresent()) {
             Grade updatedGrade = existingGrade.get();
+            
+            // Validation trước khi update
+            validateGradeConstraints(grade, updatedGrade.getCreatedBy());
+            
             updatedGrade.setGrade15(grade.getGrade15());
             updatedGrade.setGradeMidterm(grade.getGradeMidterm());
             updatedGrade.setGradeAttendance(grade.getGradeAttendance());
@@ -70,6 +81,54 @@ public class GradeServiceImpl implements IGradeService {
             return gradeRepository.save(updatedGrade);
         }
         throw new RuntimeException("Grade not found with id: " + id);
+    }
+    
+    /**
+     * Validation ràng buộc nhập điểm:
+     * 1. Student phải thuộc class
+     * 2. Teacher phải được phân công dạy môn đó trong class
+     */
+    private void validateGradeConstraints(Grade grade, User currentTeacher) {
+        if (grade.getStudent() == null) {
+            throw new IllegalArgumentException("Sinh viên không được để trống!");
+        }
+        
+        if (grade.getSubject() == null) {
+            throw new IllegalArgumentException("Môn học không được để trống!");
+        }
+        
+        if (grade.getClassEntity() == null) {
+            throw new IllegalArgumentException("Lớp học không được để trống!");
+        }
+        
+        // 1. Kiểm tra student thuộc class
+        Class classEntity = classRepository.findByIdWithStudentsAndTeachers(grade.getClassEntity().getId());
+        if (classEntity == null) {
+            throw new IllegalArgumentException("Không tìm thấy lớp học!");
+        }
+        
+        boolean studentInClass = classEntity.getStudents().stream()
+                .anyMatch(student -> student.getId().equals(grade.getStudent().getId()));
+        
+        if (!studentInClass) {
+            throw new IllegalArgumentException("Sinh viên " + grade.getStudent().getFullName() + 
+                " không thuộc lớp " + classEntity.getName() + "!");
+        }
+        
+        // 2. Kiểm tra teacher được phân công dạy môn đó trong class
+        if (currentTeacher != null) {
+            boolean teacherAssigned = classSubjectRepository.existsByClassEntityIdAndSubjectIdAndTeacherId(
+                grade.getClassEntity().getId(), 
+                grade.getSubject().getId(), 
+                currentTeacher.getId()
+            );
+            
+            if (!teacherAssigned) {
+                throw new IllegalArgumentException("Giảng viên " + currentTeacher.getFullName() + 
+                    " không được phân công dạy môn " + grade.getSubject().getName() + 
+                    " trong lớp " + classEntity.getName() + "!");
+            }
+        }
     }
     
     @Override
@@ -190,6 +249,9 @@ public class GradeServiceImpl implements IGradeService {
         grade.setNotes(notes);
         grade.setCreatedBy(createdBy);
         
+        // Validation ràng buộc
+        validateGradeConstraints(grade, createdBy);
+        
         // Tính điểm trung bình và xếp hạng
         grade.calculateAverageGrade();
         
@@ -203,6 +265,10 @@ public class GradeServiceImpl implements IGradeService {
         Optional<Grade> existingGrade = gradeRepository.findById(gradeId);
         if (existingGrade.isPresent()) {
             Grade grade = existingGrade.get();
+            
+            // Validation ràng buộc với teacher hiện tại
+            validateGradeConstraints(grade, grade.getCreatedBy());
+            
             grade.setGrade15(grade15);
             grade.setGradeMidterm(gradeMidterm);
             grade.setGradeAttendance(gradeAttendance);
@@ -229,6 +295,10 @@ public class GradeServiceImpl implements IGradeService {
         if (existingGrade.isPresent()) {
             // Cập nhật điểm hiện có
             Grade grade = existingGrade.get();
+            
+            // Validation ràng buộc với teacher hiện tại
+            validateGradeConstraints(grade, grade.getCreatedBy());
+            
             grade.setGradeMidterm(midtermScore);
             grade.setGradeFinal(finalScore);
             grade.setGradeAttendance(attendanceScore);
@@ -262,6 +332,9 @@ public class GradeServiceImpl implements IGradeService {
             grade.setSemester("2024-2025"); // Default semester
             grade.setAcademicYear("2024-2025"); // Default academic year
             grade.setNotes(notes);
+            
+            // Validation ràng buộc (không có teacher cụ thể khi tạo mới)
+            validateGradeConstraints(grade, null);
             
             // Tính điểm trung bình và xếp hạng
             grade.calculateAverageGrade();

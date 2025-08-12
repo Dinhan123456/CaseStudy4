@@ -306,4 +306,83 @@ public class ScheduleServiceImpl implements IScheduleService {
             return false;
         }
     }
+
+    @Override
+    public List<String> checkScheduleConflicts(Schedule schedule) {
+        List<String> conflicts = new java.util.ArrayList<>();
+        
+        if (schedule.getTeacher() != null && schedule.getTimeSlot() != null) {
+            boolean teacherConflict = hasTeacherConflict(
+                schedule.getTeacher().getId(),
+                schedule.getDayOfWeek(),
+                schedule.getTimeSlot().getId(),
+                schedule.getStartDate(),
+                schedule.getEndDate()
+            );
+            if (teacherConflict) {
+                conflicts.add("Giảng viên đã có lịch dạy vào thời gian này");
+            }
+        }
+        
+        if (schedule.getRoom() != null && schedule.getTimeSlot() != null) {
+            boolean roomConflict = hasRoomConflict(
+                schedule.getRoom().getId(),
+                schedule.getDayOfWeek(),
+                schedule.getTimeSlot().getId(),
+                schedule.getStartDate(),
+                schedule.getEndDate()
+            );
+            if (roomConflict) {
+                conflicts.add("Phòng học đã được sử dụng vào thời gian này");
+            }
+        }
+        
+        if (schedule.getClassEntity() != null && schedule.getTimeSlot() != null) {
+            boolean classConflict = hasClassConflict(
+                schedule.getClassEntity().getId(),
+                schedule.getDayOfWeek(),
+                schedule.getTimeSlot().getId(),
+                schedule.getStartDate(),
+                schedule.getEndDate()
+            );
+            if (classConflict) {
+                conflicts.add("Lớp học đã có lịch học vào thời gian này");
+            }
+        }
+        
+        return conflicts;
+    }
+
+    @Override
+    public Schedule saveWithConflictCheck(Schedule schedule) throws IllegalStateException {
+        // Kiểm tra conflict trước khi save
+        List<String> conflicts = checkScheduleConflicts(schedule);
+        
+        if (!conflicts.isEmpty()) {
+            throw new IllegalStateException("Scheduling conflicts detected: " + String.join(", ", conflicts));
+        }
+        
+        return save(schedule);
+    }
+
+    @Override
+    public boolean hasTeacherConflict(Long teacherId, Integer dayOfWeek, Long timeSlotId, 
+                                     LocalDate startDate, LocalDate endDate) {
+        List<Schedule> conflicts = findConflictingTeacherSchedules(teacherId, dayOfWeek, timeSlotId, startDate, endDate);
+        return !conflicts.isEmpty();
+    }
+
+    @Override
+    public boolean hasRoomConflict(Long roomId, Integer dayOfWeek, Long timeSlotId, 
+                                  LocalDate startDate, LocalDate endDate) {
+        List<Schedule> conflicts = findConflictingRoomSchedules(roomId, dayOfWeek, timeSlotId, startDate, endDate);
+        return !conflicts.isEmpty();
+    }
+
+    @Override
+    public boolean hasClassConflict(Long classId, Integer dayOfWeek, Long timeSlotId, 
+                                   LocalDate startDate, LocalDate endDate) {
+        List<Schedule> conflicts = findConflictingClassSchedules(classId, dayOfWeek, timeSlotId, startDate, endDate);
+        return !conflicts.isEmpty();
+    }
 }

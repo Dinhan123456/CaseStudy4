@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bảng Quản Trị - Chỉnh Sửa Lịch Học</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/admin/admin-panel.css}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .form-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 4px solid #007bff;
+        }
+        .time-picker {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 10px;
+        }
+        .day-selector {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .day-option {
+            flex: 1;
+            min-width: 80px;
+        }
+        .preview-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 20px;
+        }
+        .conflict-warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+<div class="wrapper">
+    <!-- Header -->
+    <header>
+        <div class="menu-toggle" onclick="toggleSidebar()">
+            <i class="fas fa-bars"></i>
+        </div>
+        <div class="user-info">
+            <i class="fas fa-user me-2" onclick="toggleLogoutDropdown()"></i>
+            <div id="logoutDropdown" class="logout-dropdown">
+                <form th:action="@{/logout}" method="post">
+                    <button type="submit" class="btn btn-sm btn-outline-danger w-100">Logout</button>
+                </form>
+            </div>
+        </div>
+    </header>
+
+    <div class="sidebar" id="sidebar">
+        <a th:href="@{/admin/panel}" class="sidebar-link home-link">
+            <i class="bi bi-house-door-fill"></i>Trang chủ
+        </a>
+        <a th:href="@{/admin/info}"><i class="fas fa-user me-2"></i>Tài khoản</a>
+        <a th:href="@{/subjects}"><i class="fas fa-book me-2"></i>Môn học</a>
+        <a th:href="@{/classes}"><i class="fas fa-chalkboard me-2"></i>Lớp học</a>
+        <a th:href="@{/admin/grades}"><i class="fas fa-id-badge me-2"></i>Điểm số</a>
+        <a th:href="@{/admin/schedules}" class="sidebar-link active"><i class="fas fa-calendar-alt me-2"></i>Lịch học</a>
+        <a th:href="@{/admin/registrations}" class="sidebar-link active"><i class="fas fa-user-plus me-2"></i>Đăng ký</a>
+    </div>
+
+    <div class="main-content">
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a th:href="@{/admin/panel}">Trang chủ</a></li>
+                <li class="breadcrumb-item"><a th:href="@{/admin/schedules}">Lịch học</a></li>
+                <li class="breadcrumb-item active" aria-current="page" 
+                    th:text="${schedule?.id ? 'Chỉnh sửa lịch học' : 'Thêm lịch học mới'}">Chỉnh sửa lịch học</li>
+            </ol>
+        </nav>
+
+        <!-- Success/Error Messages -->
+        <div th:if="${message}" class="alert alert-success mb-4 p-4 bg-green-100 border-l-4 border-green-500 text-green-700 rounded">
+            <div class="flex items-center">
+                <i class="fas fa-check-circle mr-2"></i>
+                <span th:text="${message}"></span>
+            </div>
+        </div>
+        
+        <div th:if="${error}" class="alert alert-error mb-4 p-4 bg-red-100 border-l-4 border-red-500 text-red-700 rounded">
+            <div class="flex items-center">
+                <i class="fas fa-exclamation-circle mr-2"></i>
+                <span th:text="${error}"></span>
+            </div>
+        </div>
+
+        <!-- Page Header -->
+        <div class="page-header mb-6">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="page-title">
+                        <i class="fas fa-edit me-3"></i>
+                        <span th:text="${schedule?.id ? 'Chỉnh Sửa Lịch Học' : 'Thêm Lịch Học Mới'}">Chỉnh Sửa Lịch Học</span>
+                    </h1>
+                    <p class="text-muted">Cập nhật thông tin lịch học cho lớp và môn học</p>
+                </div>
+                <div>
+                    <a th:href="@{/admin/schedules/{id}(id=${schedule?.id})}" 
+                       class="btn btn-info me-2" th:if="${schedule?.id}">
+                        <i class="fas fa-eye me-2"></i>Xem Chi Tiết
+                    </a>
+                    <a th:href="@{/admin/schedules}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Quay Lại
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <form th:action="@{/admin/schedules/{id}/edit(id=${schedule?.id ?: 'new'})}" 
+              method="post" th:object="${schedule}" id="scheduleForm">
+            
+            <div class="row">
+                <!-- Main Form -->
+                <div class="col-lg-8">
+                    <!-- Basic Information -->
+                    <div class="form-section">
+                        <h5 class="mb-4">
+                            <i class="fas fa-info-circle me-2"></i>Thông Tin Cơ Bản
+                        </h5>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label for="classId" class="form-label">Lớp Học *</label>
+                                <select class="form-select" id="classId" name="classId" required>
+                                    <option value="">Chọn lớp học...</option>
+                                    <option th:each="clazz : ${classes}" 
+                                            th:value="${clazz.id}" 
+                                            th:text="${clazz.name}"
+                                            th:selected="${clazz.id == schedule?.classEntity?.id}">
+                                        Class Name
+                                    </option>
+                                </select>
+                                <div class="invalid-feedback">
+                                    Vui lòng chọn lớp học.
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="subjectId" class="form-label">Môn Học *</label>
+                                <select class="form-select" id="subjectId" name="subjectId" required>
+                                    <option value="">Chọn môn học...</option>
+                                    <option th:each="subject : ${subjects}" 
+                                            th:value="${subject.id}" 
+                                            th:text="${subject.name + ' (' + subject.credits + ' tín chỉ)'}"
+                                            th:selected="${subject.id == schedule?.subject?.id}">
+                                        Subject Name (3 tín chỉ)
+                                    </option>
+                                </select>
+                                <div class="invalid-feedback">
+                                    Vui lòng chọn môn học.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <label for="teacherId" class="form-label">Giảng Viên *</label>
+                                <select class="form-select" id="teacherId" name="teacherId" required>
+                                    <option value="">Chọn giảng viên...</option>
+                                    <option th:each="teacher : ${teachers}" 
+                                            th:value="${teacher.id}" 
+                                            th:text="${teacher.fullName + ' (' + teacher.email + ')'}"
+                                            th:selected="${teacher.id == schedule?.teacher?.id}">
+                                        Teacher Name (email)
+                                    </option>
+                                </select>
+                                <div class="invalid-feedback">
+                                    Vui lòng chọn giảng viên.
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="roomId" class="form-label">Phòng Học *</label>
+                                <select class="form-select" id="roomId" name="roomId" required>
+                                    <option value="">Chọn phòng học...</option>
+                                    <option th:each="room : ${rooms}" 
+                                            th:value="${room.id}" 
+                                            th:text="${room.name + ' (' + room.building + ' - ' + room.floor + ' tầng)'}"
+                                            th:selected="${room.id == schedule?.room?.id}">
+                                        Room Name (Building - Floor)
+                                    </option>
+                                </select>
+                                <div class="invalid-feedback">
+                                    Vui lòng chọn phòng học.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Time & Date Settings -->
+                    <div class="form-section">
+                        <h5 class="mb-4">
+                            <i class="fas fa-clock me-2"></i>Thời Gian Học
+                        </h5>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label for="dayOfWeek" class="form-label">Thứ Trong Tuần *</label>
+                                <div class="day-selector">
+                                    <div class="day-option">
+                                        <input type="radio" class="btn-check" name="dayOfWeek" id="day2" value="2" 
+                                               th:checked="${schedule?.dayOfWeek == 2}">
+                                        <label class="btn btn-outline-primary w-100" for="day2">T2</label>
+                                    </div>
+                                    <div class="day-option">
+                                        <input type="radio" class="btn-check" name="dayOfWeek" id="day3" value="3"
+                                               th:checked="${schedule?.dayOfWeek == 3}">
+                                        <label class="btn btn-outline-primary w-100" for="day3">T3</label>
+                                    </div>
+                                    <div class="day-option">
+                                        <input type="radio" class="btn-check" name="dayOfWeek" id="day4" value="4"
+                                               th:checked="${schedule?.dayOfWeek == 4}">
+                                        <label class="btn btn-outline-primary w-100" for="day4">T4</label>
+                                    </div>
+                                    <div class="day-option">
+                                        <input type="radio" class="btn-check" name="dayOfWeek" id="day5" value="5"
+                                               th:checked="${schedule?.dayOfWeek == 5}">
+                                        <label class="btn btn-outline-primary w-100" for="day5">T5</label>
+                                    </div>
+                                    <div class="day-option">
+                                        <input type="radio" class="btn-check" name="dayOfWeek" id="day6" value="6"
+                                               th:checked="${schedule?.dayOfWeek == 6}">
+                                        <label class="btn btn-outline-primary w-100" for="day6">T6</label>
+                                    </div>
+                                    <div class="day-option">
+                                        <input type="radio" class="btn-check" name="dayOfWeek" id="day7" value="7"
+                                               th:checked="${schedule?.dayOfWeek == 7}">
+                                        <label class="btn btn-outline-primary w-100" for="day7">T7</label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="timeSlotId" class="form-label">Khung Giờ *</label>
+                                <select class="form-select" id="timeSlotId" name="timeSlotId" required>
+                                    <option value="">Chọn khung giờ...</option>
+                                    <option th:each="timeSlot : ${timeSlots}" 
+                                            th:value="${timeSlot.id}" 
+                                            th:text="${timeSlot.name + ' (' + #temporals.format(timeSlot.startTime, 'HH:mm') + ' - ' + #temporals.format(timeSlot.endTime, 'HH:mm') + ')'}"
+                                            th:selected="${timeSlot.id == schedule?.timeSlot?.id}">
+                                        Tiết 1-2 (08:00 - 09:30)
+                                    </option>
+                                </select>
+                                <div class="invalid-feedback">
+                                    Vui lòng chọn khung giờ.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <label for="startDate" class="form-label">Ngày Bắt Đầu *</label>
+                                <input type="date" class="form-control" id="startDate" name="startDate" 
+                                       th:value="${schedule?.startDate}" required>
+                                <div class="invalid-feedback">
+                                    Vui lòng chọn ngày bắt đầu.
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="endDate" class="form-label">Ngày Kết Thúc *</label>
+                                <input type="date" class="form-control" id="endDate" name="endDate" 
+                                       th:value="${schedule?.endDate}" required>
+                                <div class="invalid-feedback">
+                                    Vui lòng chọn ngày kết thúc.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Additional Information -->
+                    <div class="form-section">
+                        <h5 class="mb-4">
+                            <i class="fas fa-sticky-note me-2"></i>Thông Tin Bổ Sung
+                        </h5>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Mô Tả</label>
+                            <textarea class="form-control" id="description" name="description" rows="3" 
+                                      th:text="${schedule?.description}"
+                                      placeholder="Nhập mô tả cho lịch học (không bắt buộc)..."></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Ghi Chú</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="2" 
+                                      th:text="${schedule?.notes}"
+                                      placeholder="Nhập ghi chú thêm (không bắt buộc)..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="d-flex justify-content-end gap-2">
+                        <a th:href="@{/admin/schedules}" class="btn btn-secondary">
+                            <i class="fas fa-times me-1"></i>Hủy
+                        </a>
+                        <button type="button" class="btn btn-info" onclick="previewSchedule()">
+                            <i class="fas fa-eye me-1"></i>Xem Trước
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>
+                            <span th:text="${schedule?.id ? 'Cập Nhật' : 'Tạo Lịch'}">Cập Nhật</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Side Panel -->
+                <div class="col-lg-4">
+                    <!-- Schedule Preview -->
+                    <div class="card mb-4" id="schedulePreview" style="display: none;">
+                        <div class="preview-card">
+                            <h6 class="text-white mb-3">
+                                <i class="fas fa-eye me-2"></i>Xem Trước Lịch Học
+                            </h6>
+                            <div id="previewContent">
+                                <!-- Preview content will be populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Conflict Check -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-exclamation-triangle me-2"></i>Kiểm Tra Xung Đột
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <button type="button" class="btn btn-warning btn-sm w-100" onclick="checkConflicts()">
+                                <i class="fas fa-search me-1"></i>Kiểm Tra Xung Đột
+                            </button>
+                            <div id="conflictResults" class="mt-3" style="display: none;">
+                                <!-- Conflict results will be displayed here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tips -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-lightbulb me-2"></i>Gợi Ý
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info mb-0">
+                                <small>
+                                    <strong>Lưu ý:</strong>
+                                    <ul class="mb-0 mt-2">
+                                        <li>Kiểm tra xung đột trước khi lưu</li>
+                                        <li>Đảm bảo phòng học có đủ chỗ</li>
+                                        <li>Kiểm tra lịch của giảng viên</li>
+                                        <li>Ngày kết thúc phải sau ngày bắt đầu</li>
+                                    </ul>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    sidebar.classList.toggle('active');
+}
+
+function toggleLogoutDropdown() {
+    const dropdown = document.getElementById('logoutDropdown');
+    dropdown.classList.toggle('show');
+}
+
+function previewSchedule() {
+    const form = document.getElementById('scheduleForm');
+    const formData = new FormData(form);
+    
+    // Get selected values
+    const classSelect = document.getElementById('classId');
+    const subjectSelect = document.getElementById('subjectId');
+    const teacherSelect = document.getElementById('teacherId');
+    const roomSelect = document.getElementById('roomId');
+    const timeSlotSelect = document.getElementById('timeSlotId');
+    const dayOfWeek = document.querySelector('input[name="dayOfWeek"]:checked');
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    
+    if (!classSelect.value || !subjectSelect.value || !teacherSelect.value || !roomSelect.value || !timeSlotSelect.value || !dayOfWeek || !startDate || !endDate) {
+        alert('Vui lòng điền đầy đủ thông tin bắt buộc!');
+        return;
+    }
+    
+    // Build preview content
+    const previewContent = `
+        <div class="mb-2">
+            <strong>Lớp:</strong> ${classSelect.options[classSelect.selectedIndex].text}
+        </div>
+        <div class="mb-2">
+            <strong>Môn:</strong> ${subjectSelect.options[subjectSelect.selectedIndex].text}
+        </div>
+        <div class="mb-2">
+            <strong>GV:</strong> ${teacherSelect.options[teacherSelect.selectedIndex].text}
+        </div>
+        <div class="mb-2">
+            <strong>Phòng:</strong> ${roomSelect.options[roomSelect.selectedIndex].text}
+        </div>
+        <div class="mb-2">
+            <strong>Thời gian:</strong> ${getDayName(dayOfWeek.value)} - ${timeSlotSelect.options[timeSlotSelect.selectedIndex].text}
+        </div>
+        <div class="mb-2">
+            <strong>Từ:</strong> ${formatDate(startDate)} <strong>đến:</strong> ${formatDate(endDate)}
+        </div>
+    `;
+    
+    document.getElementById('previewContent').innerHTML = previewContent;
+    document.getElementById('schedulePreview').style.display = 'block';
+}
+
+function checkConflicts() {
+    const formData = {
+        classId: document.getElementById('classId').value,
+        subjectId: document.getElementById('subjectId').value,
+        teacherId: document.getElementById('teacherId').value,
+        roomId: document.getElementById('roomId').value,
+        timeSlotId: document.getElementById('timeSlotId').value,
+        dayOfWeek: document.querySelector('input[name="dayOfWeek"]:checked')?.value,
+        startDate: document.getElementById('startDate').value,
+        endDate: document.getElementById('endDate').value
+    };
+    
+    if (!formData.classId || !formData.subjectId || !formData.teacherId || !formData.roomId || !formData.timeSlotId || !formData.dayOfWeek || !formData.startDate || !formData.endDate) {
+        alert('Vui lòng điền đầy đủ thông tin trước khi kiểm tra xung đột!');
+        return;
+    }
+    
+    fetch('/admin/schedules/check-conflicts', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        const resultsDiv = document.getElementById('conflictResults');
+        
+        if (data.conflicts && data.conflicts.length > 0) {
+            let conflictHtml = '<div class="conflict-warning"><h6 class="text-danger">Phát hiện xung đột:</h6><ul>';
+            data.conflicts.forEach(conflict => {
+                conflictHtml += `<li class="text-danger small">${conflict.message}</li>`;
+            });
+            conflictHtml += '</ul></div>';
+            resultsDiv.innerHTML = conflictHtml;
+        } else {
+            resultsDiv.innerHTML = '<div class="alert alert-success mb-0"><small><i class="fas fa-check me-1"></i>Không có xung đột!</small></div>';
+        }
+        
+        resultsDiv.style.display = 'block';
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        document.getElementById('conflictResults').innerHTML = '<div class="alert alert-danger mb-0"><small>Có lỗi xảy ra khi kiểm tra xung đột!</small></div>';
+        document.getElementById('conflictResults').style.display = 'block';
+    });
+}
+
+function getDayName(dayNumber) {
+    const days = {
+        '2': 'Thứ Hai',
+        '3': 'Thứ Ba', 
+        '4': 'Thứ Tư',
+        '5': 'Thứ Năm',
+        '6': 'Thứ Sáu',
+        '7': 'Thứ Bảy'
+    };
+    return days[dayNumber] || 'Không xác định';
+}
+
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('vi-VN');
+}
+
+// Form validation
+(function() {
+    'use strict';
+    
+    // Fetch all the forms we want to apply custom Bootstrap validation styles to
+    var forms = document.querySelectorAll('.needs-validation');
+    
+    // Loop over them and prevent submission
+    Array.prototype.slice.call(forms)
+        .forEach(function(form) {
+            form.addEventListener('submit', function(event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                
+                form.classList.add('was-validated');
+            }, false);
+        });
+})();
+
+// Date validation
+document.getElementById('startDate').addEventListener('change', function() {
+    const startDate = this.value;
+    const endDateInput = document.getElementById('endDate');
+    
+    if (startDate) {
+        endDateInput.min = startDate;
+        
+        if (endDateInput.value && endDateInput.value < startDate) {
+            endDateInput.value = '';
+        }
+    }
+});
+
+document.getElementById('endDate').addEventListener('change', function() {
+    const endDate = this.value;
+    const startDate = document.getElementById('startDate').value;
+    
+    if (startDate && endDate && endDate < startDate) {
+        alert('Ngày kết thúc phải sau ngày bắt đầu!');
+        this.value = '';
+    }
+});
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(event) {
+    const dropdown = document.getElementById('logoutDropdown');
+    const userInfo = document.querySelector('.user-info');
+    
+    if (!userInfo.contains(event.target)) {
+        dropdown.classList.remove('show');
+    }
+});
+</script>
+</body>
+</html>

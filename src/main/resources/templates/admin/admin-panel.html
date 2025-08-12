@@ -35,7 +35,8 @@
         <a th:href="@{/subjects}"><i class="fas fa-book me-2"></i>Môn học</a>
         <a th:href="@{/classes}"><i class="fas fa-chalkboard me-2"></i>Lớp học</a>
         <a th:href="@{/admin/grades}"><i class="fas fa-id-badge me-2"></i>Điểm số</a>
-        <a th:href="@{/admin/schedules}"><i class="fas fa-calendar me-2"></i>Lịch học</a>
+        <a th:href="@{/admin/schedules}" class="sidebar-link active"><i class="fas fa-calendar-alt me-2"></i>Lịch học</a>
+        <a th:href="@{/admin/registrations}" class="sidebar-link active"><i class="fas fa-user-plus me-2"></i>Đăng ký</a>
     </div>
 
     <div class="main-content">
@@ -57,6 +58,12 @@
                 <div class="card p-4">
                     <h5>Lớp học</h5>
                     <p>Phân công môn học, giảng viên, lớp, sinh viên</p>
+                </div>
+            </a>
+            <a th:href="@{/admin/registrations}" class="text-decoration-none">
+                <div class="card p-4">
+                    <h5>Đăng ký</h5>
+                    <p>Quản lý đăng ký môn học của sinh viên</p>
                 </div>
             </a>
             <a th:href="@{/admin/grades}" class="text-decoration-none">

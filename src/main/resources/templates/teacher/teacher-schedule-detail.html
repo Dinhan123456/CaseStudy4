@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giảng Viên - Chi Tiết Lịch Học</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/teacher/teacher-panel.css}">
+    <style>
+        .schedule-card {
+            border-left: 4px solid #28a745;
+            margin-bottom: 20px;
+        }
+        .time-badge {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+        .schedule-info {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .day-indicator {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            margin-right: 15px;
+            background: linear-gradient(135deg, #28a745, #20c997);
+        }
+        .student-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #007bff, #6610f2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        .attendance-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: bold;
+        }
+        .grade-input {
+            width: 80px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+<div class="wrapper">
+    <!-- Header -->
+    <header class="header">
+        <div class="menu-toggle" onclick="toggleSidebar()">
+            <i class="fas fa-bars"></i>
+        </div>
+        <div class="user-info">
+            <span class="user-name" th:text="${teacher?.fullName}">Teacher Name</span>
+            <i class="fas fa-user me-2" onclick="toggleLogoutDropdown()"></i>
+            <div id="logoutDropdown" class="logout-dropdown">
+                <form th:action="@{/logout}" method="post">
+                    <button type="submit" class="btn btn-sm btn-outline-danger w-100">Logout</button>
+                </form>
+            </div>
+        </div>
+    </header>
+
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h4><i class="fas fa-chalkboard-teacher me-2"></i>Teacher Panel</h4>
+        </div>
+        <a th:href="@{/teacher/panel}" class="sidebar-link">
+            <i class="fas fa-home me-2"></i>Trang chủ
+        </a>
+        <a th:href="@{/teacher/profile}">
+            <i class="fas fa-user me-2"></i>Thông tin cá nhân
+        </a>
+        <a th:href="@{/teacher/classes}">
+            <i class="fas fa-chalkboard me-2"></i>Lớp học
+        </a>
+        <a th:href="@{/teacher/grades}">
+            <i class="fas fa-clipboard-list me-2"></i>Quản lý điểm
+        </a>
+        <a th:href="@{/teacher/schedule}" class="sidebar-link active">
+            <i class="fas fa-calendar-alt me-2"></i>Lịch học
+        </a>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a th:href="@{/teacher/panel}">Trang chủ</a></li>
+                <li class="breadcrumb-item"><a th:href="@{/teacher/schedule}">Lịch học</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Chi tiết lịch học</li>
+            </ol>
+        </nav>
+
+        <!-- Success/Error Messages -->
+        <div th:if="${message}" class="alert alert-success mb-4">
+            <i class="fas fa-check-circle me-2"></i>
+            <span th:text="${message}"></span>
+        </div>
+        
+        <div th:if="${error}" class="alert alert-danger mb-4">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            <span th:text="${error}"></span>
+        </div>
+
+        <!-- Page Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2><i class="fas fa-calendar-day me-3"></i>Chi Tiết Lịch Học</h2>
+                <p class="text-muted">Thông tin chi tiết về buổi học</p>
+            </div>
+            <div>
+                <a th:href="@{/teacher/schedule/{id}/export(id=${schedule?.id})}" class="btn btn-info me-2">
+                    <i class="fas fa-download me-2"></i>Xuất File
+                </a>
+                <a th:href="@{/teacher/schedule}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Quay Lại
+                </a>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Schedule Information -->
+            <div class="col-lg-8">
+                <!-- Main Schedule Card -->
+                <div class="card schedule-card">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-info-circle me-2"></i>Thông Tin Lịch Học
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="schedule-info">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6><i class="fas fa-chalkboard me-2"></i>Lớp Học:</h6>
+                                    <p class="fw-bold text-primary fs-5" th:text="${schedule?.classEntity?.name}">Class Name</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6><i class="fas fa-book me-2"></i>Môn Học:</h6>
+                                    <p class="fw-bold text-success fs-5" th:text="${schedule?.subject?.name}">Subject Name</p>
+                                    <small class="text-muted" th:text="${schedule?.subject?.credits + ' tín chỉ'}">3 tín chỉ</small>
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-md-6">
+                                    <h6><i class="fas fa-door-open me-2"></i>Phòng Học:</h6>
+                                    <p class="fw-bold text-warning fs-5" th:text="${schedule?.room?.name}">Room Name</p>
+                                    <small class="text-muted" th:text="${schedule?.room?.building + ' - ' + schedule?.room?.floor + ' tầng'}">Building A - 2 tầng</small>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6><i class="fas fa-users me-2"></i>Số Sinh Viên Đăng Ký:</h6>
+                                    <p class="fw-bold text-info fs-5" th:text="${enrolledStudents ?: 0}">0</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Time Information -->
+                        <div class="card mt-4">
+                            <div class="card-header">
+                                <h6 class="card-title mb-0">
+                                    <i class="fas fa-clock me-2"></i>Thời Gian Học
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="day-indicator" th:text="${dayNames[schedule?.dayOfWeek]}">T2</div>
+                                    <div>
+                                        <h5 class="mb-0" th:text="${dayFullNames[schedule?.dayOfWeek]}">Thứ Hai</h5>
+                                        <div class="time-badge">
+                                            <span th:text="${#temporals.format(schedule?.timeSlot?.startTime, 'HH:mm')}">08:00</span>
+                                            -
+                                            <span th:text="${#temporals.format(schedule?.timeSlot?.endTime, 'HH:mm')}">09:30</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mt-3">
+                                    <h6>Thời Gian Học Kỳ:</h6>
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <i class="fas fa-calendar-plus text-success me-1"></i>
+                                            <strong>Bắt đầu:</strong> 
+                                            <span th:text="${#temporals.format(schedule?.startDate, 'dd/MM/yyyy')}">01/01/2024</span>
+                                        </div>
+                                        <div>
+                                            <i class="fas fa-calendar-minus text-danger me-1"></i>
+                                            <strong>Kết thúc:</strong> 
+                                            <span th:text="${#temporals.format(schedule?.endDate, 'dd/MM/yyyy')}">30/05/2024</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Students List -->
+                <div class="card mt-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-users me-2"></i>Danh Sách Sinh Viên
+                        </h6>
+                        <div>
+                            <button class="btn btn-sm btn-success" onclick="markAllPresent()">
+                                <i class="fas fa-check me-1"></i>Có mặt tất cả
+                            </button>
+                            <button class="btn btn-sm btn-warning" onclick="exportStudentList()">
+                                <i class="fas fa-download me-1"></i>Xuất DS
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>STT</th>
+                                        <th>Sinh Viên</th>
+                                        <th>Mã SV</th>
+                                        <th>Email</th>
+                                        <th>Điểm Danh</th>
+                                        <th>Điểm TB</th>
+                                        <th>Thao Tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="student, stat : ${students}">
+                                        <td th:text="${stat.count}">1</td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="student-avatar" th:text="${student.fullName?.charAt(0)}">A</div>
+                                                <div>
+                                                    <strong th:text="${student.fullName}">Student Name</strong>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td th:text="${student.username}">SV001</td>
+                                        <td th:text="${student.email}">student@email.com</td>
+                                        <td>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input attendance-checkbox" 
+                                                       type="checkbox" 
+                                                       th:id="'attendance_' + ${student.id}"
+                                                       th:data-student-id="${student.id}"
+                                                       th:checked="${attendanceMap[student.id]}">
+                                                <label class="form-check-label" th:for="'attendance_' + ${student.id}">
+                                                    <span class="attendance-badge bg-success" th:if="${attendanceMap[student.id]}">Có mặt</span>
+                                                    <span class="attendance-badge bg-danger" th:unless="${attendanceMap[student.id]}">Vắng</span>
+                                                </label>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info" th:text="${averageGrades[student.id] ?: 'Chưa có'}">8.5</span>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <button class="btn btn-sm btn-info" 
+                                                        th:onclick="'viewStudentDetails(' + ${student.id} + ')'">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-warning" 
+                                                        th:onclick="'editGrades(' + ${student.id} + ')'">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr th:if="${#lists.isEmpty(students)}">
+                                        <td colspan="7" class="text-center text-muted py-4">
+                                            <i class="fas fa-user-slash fa-2x mb-2"></i>
+                                            <br>Chưa có sinh viên đăng ký
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Side Information -->
+            <div class="col-lg-4">
+                <!-- Quick Actions -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-bolt me-2"></i>Thao Tác Nhanh
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-primary btn-sm" onclick="takeAttendance()">
+                                <i class="fas fa-check-square me-1"></i>Điểm Danh Hôm Nay
+                            </button>
+                            <button class="btn btn-success btn-sm" onclick="inputGrades()">
+                                <i class="fas fa-edit me-1"></i>Nhập Điểm
+                            </button>
+                            <button class="btn btn-info btn-sm" onclick="sendNotification()">
+                                <i class="fas fa-bell me-1"></i>Gửi Thông Báo
+                            </button>
+                            <a th:href="@{/teacher/schedule/{id}/export(id=${schedule?.id})}" class="btn btn-warning btn-sm">
+                                <i class="fas fa-download me-1"></i>Xuất Báo Cáo
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Schedule Statistics -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-chart-bar me-2"></i>Thống Kê
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="text-center mb-3">
+                            <h4 class="text-primary" th:text="${enrolledStudents ?: 0}">0</h4>
+                            <small class="text-muted">Sinh viên đăng ký</small>
+                        </div>
+                        <div class="text-center mb-3">
+                            <h4 class="text-success" th:text="${attendanceRate ?: 0}">0%</h4>
+                            <small class="text-muted">Tỷ lệ tham gia</small>
+                        </div>
+                        <div class="text-center mb-3">
+                            <h4 class="text-info" th:text="${averageGrade ?: 0}">0</h4>
+                            <small class="text-muted">Điểm trung bình</small>
+                        </div>
+                        <div class="text-center">
+                            <h4 class="text-warning" th:text="${totalSessions ?: 0}">0</h4>
+                            <small class="text-muted">Tổng số buổi</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notes -->
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-sticky-note me-2"></i>Ghi Chú
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <textarea class="form-control" id="scheduleNotes" rows="4" 
+                                  placeholder="Nhập ghi chú cho buổi học..."
+                                  th:text="${schedule?.notes}"></textarea>
+                        <button class="btn btn-primary btn-sm mt-2 w-100" onclick="saveNotes()">
+                            <i class="fas fa-save me-1"></i>Lưu Ghi Chú
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    sidebar.classList.toggle('active');
+}
+
+function toggleLogoutDropdown() {
+    const dropdown = document.getElementById('logoutDropdown');
+    dropdown.classList.toggle('show');
+}
+
+function markAllPresent() {
+    const checkboxes = document.querySelectorAll('.attendance-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = true;
+        updateAttendanceDisplay(checkbox);
+    });
+}
+
+function takeAttendance() {
+    const attendanceData = [];
+    const checkboxes = document.querySelectorAll('.attendance-checkbox');
+    
+    checkboxes.forEach(checkbox => {
+        attendanceData.push({
+            studentId: checkbox.dataset.studentId,
+            present: checkbox.checked
+        });
+    });
+    
+    fetch(`/teacher/schedule/[[${schedule?.id}]]/attendance`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(attendanceData)
+    })
+    .then(response => {
+        if (response.ok) {
+            alert('Điểm danh đã được lưu thành công!');
+        } else {
+            alert('Có lỗi xảy ra khi lưu điểm danh!');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Có lỗi xảy ra khi lưu điểm danh!');
+    });
+}
+
+function inputGrades() {
+    alert('Tính năng nhập điểm đang được phát triển!');
+}
+
+function sendNotification() {
+    const message = prompt('Nhập nội dung thông báo:');
+    if (message) {
+        fetch(`/teacher/schedule/[[${schedule?.id}]]/notification`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ message: message })
+        })
+        .then(response => {
+            if (response.ok) {
+                alert('Thông báo đã được gửi!');
+            } else {
+                alert('Có lỗi xảy ra khi gửi thông báo!');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Có lỗi xảy ra khi gửi thông báo!');
+        });
+    }
+}
+
+function exportStudentList() {
+    window.open(`/teacher/schedule/[[${schedule?.id}]]/export-students`, '_blank');
+}
+
+function viewStudentDetails(studentId) {
+    window.open(`/teacher/students/${studentId}`, '_blank');
+}
+
+function editGrades(studentId) {
+    window.open(`/teacher/grades/student/${studentId}`, '_blank');
+}
+
+function saveNotes() {
+    const notes = document.getElementById('scheduleNotes').value;
+    
+    fetch(`/teacher/schedule/[[${schedule?.id}]]/notes`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ notes: notes })
+    })
+    .then(response => {
+        if (response.ok) {
+            alert('Ghi chú đã được lưu!');
+        } else {
+            alert('Có lỗi xảy ra khi lưu ghi chú!');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Có lỗi xảy ra khi lưu ghi chú!');
+    });
+}
+
+function updateAttendanceDisplay(checkbox) {
+    const label = checkbox.nextElementSibling;
+    const badge = label.querySelector('.attendance-badge');
+    
+    if (checkbox.checked) {
+        badge.textContent = 'Có mặt';
+        badge.className = 'attendance-badge bg-success';
+    } else {
+        badge.textContent = 'Vắng';
+        badge.className = 'attendance-badge bg-danger';
+    }
+}
+
+// Event listeners
+document.querySelectorAll('.attendance-checkbox').forEach(checkbox => {
+    checkbox.addEventListener('change', function() {
+        updateAttendanceDisplay(this);
+    });
+});
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(event) {
+    const dropdown = document.getElementById('logoutDropdown');
+    const userInfo = document.querySelector('.user-info');
+    
+    if (!userInfo.contains(event.target)) {
+        dropdown.classList.remove('show');
+    }
+});
+</script>
+</body>
+</html>

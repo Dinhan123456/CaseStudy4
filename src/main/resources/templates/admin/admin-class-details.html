@@ -27,11 +27,15 @@
 
 
     <div class="sidebar" id="sidebar">
-        <a th:href="@{/admin/panel}"><i class="bi bi-house-door-fill"></i>Trang chủ</a>
+        <a th:href="@{/admin/panel}" class="sidebar-link home-link">
+            <i class="bi bi-house-door-fill"></i>Trang chủ
+        </a>
         <a th:href="@{/admin/info}"><i class="fas fa-user me-2"></i>Tài khoản</a>
         <a th:href="@{/subjects}"><i class="fas fa-book me-2"></i>Môn học</a>
         <a th:href="@{/classes}"><i class="fas fa-chalkboard me-2"></i>Lớp học</a>
-        <a th:href="@{/grades}"><i class="fas fa-id-badge me-2"></i>Điểm số</a>
+        <a th:href="@{/admin/grades}"><i class="fas fa-id-badge me-2"></i>Điểm số</a>
+        <a th:href="@{/admin/schedules}" class="sidebar-link active"><i class="fas fa-calendar-alt me-2"></i>Lịch học</a>
+        <a th:href="@{/admin/registrations}" class="sidebar-link active"><i class="fas fa-user-plus me-2"></i>Đăng ký</a>
     </div>
 
 

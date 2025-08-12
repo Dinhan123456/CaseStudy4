@@ -15,6 +15,12 @@ public interface RegistrationPeriodRepository extends JpaRepository<Registration
     // Tìm tất cả kỳ đăng ký đang hoạt động
     List<RegistrationPeriod> findByActiveTrueOrderByStartTimeDesc();
     
+    // Tìm theo status và active
+    List<RegistrationPeriod> findByStatusAndActiveTrue(RegistrationPeriod.RegistrationStatus status);
+    
+    // Tìm tất cả đang active
+    List<RegistrationPeriod> findByActiveTrue();
+    
     // Tìm kỳ đăng ký theo trạng thái
     List<RegistrationPeriod> findByStatusAndActiveTrueOrderByStartTimeDesc(RegistrationPeriod.RegistrationStatus status);
     

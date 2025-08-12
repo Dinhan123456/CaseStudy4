@@ -16,6 +16,9 @@ public class Class {
     @Column(name = "name", nullable = false, length = 100)
     private String name;
 
+    @Column(name = "capacity", nullable = false)
+    private Integer capacity = 30; // Sức chứa mặc định 30 sinh viên
+
     @Column(name = "status", columnDefinition = "BOOLEAN DEFAULT TRUE")
     private boolean active = true;
 
@@ -96,6 +99,31 @@ public class Class {
 
     public void setTeachers(Set<User> teachers) {
         this.teachers = teachers;
+    }
+
+    public Integer getCapacity() {
+        return capacity;
+    }
+
+    public void setCapacity(Integer capacity) {
+        this.capacity = capacity;
+    }
+
+    // Helper methods for capacity management
+    public int getCurrentStudentCount() {
+        return students != null ? students.size() : 0;
+    }
+
+    public int getAvailableSlots() {
+        return capacity - getCurrentStudentCount();
+    }
+
+    public boolean isFull() {
+        return getCurrentStudentCount() >= capacity;
+    }
+
+    public boolean canAddStudent() {
+        return !isFull();
     }
 
     @Override

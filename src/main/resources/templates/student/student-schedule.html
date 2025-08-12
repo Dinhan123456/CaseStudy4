@@ -388,12 +388,18 @@
                                     <td th:each="day : ${#numbers.sequence(2, 8)}" class="schedule-cell">
                                         <div th:each="schedule : ${scheduleMap.get(day + '_' + period.id)}">
                                             <div class="schedule-item"
-                                                 th:onclick="'showScheduleDetail(' + ${schedule.id} + ')'"
+                                                 style="cursor: pointer;"
                                                  data-bs-toggle="tooltip"
                                                  th:title="${schedule.subject.subjectName + ' - ' + schedule.room.roomName}">
                                                 <div class="fw-bold" th:text="${schedule.subject.subjectCode}">MATH101</div>
                                                 <div class="small" th:text="${schedule.room.roomName}">A101</div>
                                                 <div class="small" th:text="${schedule.teacher.fullName}">Nguyễn Văn A</div>
+                                                <div class="mt-1">
+                                                    <a th:href="@{/student/schedule/{scheduleId}/detail(scheduleId=${schedule.id})}" 
+                                                       class="btn btn-sm btn-outline-primary">
+                                                        <i class="fas fa-eye me-1"></i>Chi tiết
+                                                    </a>
+                                                </div>
                                             </div>
                                         </div>
                                     </td>

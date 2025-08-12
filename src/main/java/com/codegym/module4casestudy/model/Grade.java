@@ -4,7 +4,11 @@ import javax.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "grades")
+@Table(name = "grades",
+       uniqueConstraints = {
+           @UniqueConstraint(name = "unique_student_subject_class", 
+                           columnNames = {"student_id", "subject_id", "class_id"})
+       })
 public class Grade {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,24 +29,29 @@ public class Grade {
     @JoinColumn(name = "class_id")
     private Class classEntity;
 
-    // Điểm 15 phút (5%)
+    // Điểm 15 phút (5%) - Constraint 0-10
     @Column(name = "grade_15", precision = 4, scale = 2)
+    @org.hibernate.annotations.Check(constraints = "grade_15 >= 0 AND grade_15 <= 10")
     private Double grade15;
 
-    // Điểm giữa kỳ (20%)
+    // Điểm giữa kỳ (20%) - Constraint 0-10
     @Column(name = "grade_midterm", precision = 4, scale = 2)
+    @org.hibernate.annotations.Check(constraints = "grade_midterm >= 0 AND grade_midterm <= 10")
     private Double gradeMidterm;
 
-    // Điểm chuyên cần (5%)
+    // Điểm chuyên cần (5%) - Constraint 0-10
     @Column(name = "grade_attendance", precision = 4, scale = 2)
+    @org.hibernate.annotations.Check(constraints = "grade_attendance >= 0 AND grade_attendance <= 10")
     private Double gradeAttendance;
 
-    // Điểm cuối kỳ (70%)
+    // Điểm cuối kỳ (70%) - Constraint 0-10
     @Column(name = "grade_final", precision = 4, scale = 2)
+    @org.hibernate.annotations.Check(constraints = "grade_final >= 0 AND grade_final <= 10")
     private Double gradeFinal;
 
-    // Điểm trung bình (tự động tính)
+    // Điểm trung bình (tự động tính) - Constraint 0-10
     @Column(name = "average_grade", precision = 4, scale = 2)
+    @org.hibernate.annotations.Check(constraints = "average_grade >= 0 AND average_grade <= 10")
     private Double averageGrade;
 
     // Xếp hạng (A, B, C, D, F)
@@ -130,6 +139,7 @@ public class Grade {
     }
 
     public void setGrade15(Double grade15) {
+        validateGrade(grade15, "Điểm 15 phút");
         this.grade15 = grade15;
     }
 
@@ -138,6 +148,7 @@ public class Grade {
     }
 
     public void setGradeMidterm(Double gradeMidterm) {
+        validateGrade(gradeMidterm, "Điểm giữa kỳ");
         this.gradeMidterm = gradeMidterm;
     }
 
@@ -146,6 +157,7 @@ public class Grade {
     }
 
     public void setGradeAttendance(Double gradeAttendance) {
+        validateGrade(gradeAttendance, "Điểm chuyên cần");
         this.gradeAttendance = gradeAttendance;
     }
 
@@ -154,6 +166,7 @@ public class Grade {
     }
 
     public void setGradeFinal(Double gradeFinal) {
+        validateGrade(gradeFinal, "Điểm cuối kỳ");
         this.gradeFinal = gradeFinal;
     }
 
@@ -162,6 +175,7 @@ public class Grade {
     }
 
     public void setAverageGrade(Double averageGrade) {
+        validateGrade(averageGrade, "Điểm trung bình");
         this.averageGrade = averageGrade;
     }
 
@@ -244,6 +258,12 @@ public class Grade {
         if (grade >= 5.5) return "C";
         if (grade >= 4.0) return "D";
         return "F";
+    }
+
+    private void validateGrade(Double grade, String gradeType) {
+        if (grade != null && (grade < 0 || grade > 10)) {
+            throw new IllegalArgumentException(gradeType + " phải nằm trong khoảng từ 0 đến 10. Giá trị nhận được: " + grade);
+        }
     }
 
     @Override

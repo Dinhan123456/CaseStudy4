@@ -5,7 +5,15 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "schedules")
+@Table(name = "schedules", 
+       uniqueConstraints = {
+           @UniqueConstraint(name = "unique_teacher_schedule", 
+                           columnNames = {"teacher_id", "day_of_week", "time_slot_id", "start_date", "end_date"}),
+           @UniqueConstraint(name = "unique_room_schedule", 
+                           columnNames = {"room_id", "day_of_week", "time_slot_id", "start_date", "end_date"}),
+           @UniqueConstraint(name = "unique_class_schedule", 
+                           columnNames = {"class_id", "day_of_week", "time_slot_id", "start_date", "end_date"})
+       })
 public class Schedule {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -36,8 +44,8 @@ public class Schedule {
     @JoinColumn(name = "time_slot_id", nullable = false)
     private TimeSlot timeSlot;
 
-    // Ngày học (thứ 2 = 1, thứ 3 = 2, ..., thứ 7 = 6)
-    @Column(name = "day_of_week", nullable = false)
+    // Ngày học (0=CN, 1=T2, 2=T3, 3=T4, 4=T5, 5=T6, 6=T7)
+    @Column(name = "day_of_week", nullable = false, columnDefinition = "TINYINT")
     private Integer dayOfWeek;
 
     // Ngày bắt đầu hiệu lực
@@ -57,7 +65,7 @@ public class Schedule {
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
 
-    // Ai tạo lịch
+    // Ai tạo lịch (FK đến users)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by")
     private User createdBy;
@@ -155,6 +163,9 @@ public class Schedule {
     }
 
     public void setDayOfWeek(Integer dayOfWeek) {
+        if (dayOfWeek == null || dayOfWeek < 0 || dayOfWeek > 6) {
+            throw new IllegalArgumentException("Ngày trong tuần phải từ 0 (Chủ nhật) đến 6 (Thứ 7). Giá trị nhận được: " + dayOfWeek);
+        }
         this.dayOfWeek = dayOfWeek;
     }
 
@@ -226,14 +237,27 @@ public class Schedule {
     // Helper methods
     public String getDayOfWeekName() {
         switch (dayOfWeek) {
+            case 0: return "Chủ nhật";
             case 1: return "Thứ 2";
             case 2: return "Thứ 3";
             case 3: return "Thứ 4";
             case 4: return "Thứ 5";
             case 5: return "Thứ 6";
             case 6: return "Thứ 7";
-            case 0: return "Chủ nhật";
             default: return "Không xác định";
+        }
+    }
+
+    public String getDayOfWeekShort() {
+        switch (dayOfWeek) {
+            case 0: return "CN";
+            case 1: return "T2";
+            case 2: return "T3";
+            case 3: return "T4";
+            case 4: return "T5";
+            case 5: return "T6";
+            case 6: return "T7";
+            default: return "??";
         }
     }
 

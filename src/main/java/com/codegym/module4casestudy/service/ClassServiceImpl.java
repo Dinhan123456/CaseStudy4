@@ -138,14 +138,48 @@ public class ClassServiceImpl implements IClassService {
     }
 
     @Override
-    public void addStudentToClass(Long classId, Long studentId) {
+    public void addStudentToClass(Long classId, Long studentId) throws IllegalStateException {
         Class classEntity = classRepository.findById(classId).orElse(null);
         User student = userRepository.findById(studentId).orElse(null);
 
-        if (classEntity != null && student != null) {
-            classEntity.getStudents().add(student);
-            classRepository.save(classEntity);
+        if (classEntity == null) {
+            throw new IllegalStateException("Không tìm thấy lớp học với ID: " + classId);
         }
+        if (student == null) {
+            throw new IllegalStateException("Không tìm thấy sinh viên với ID: " + studentId);
+        }
+
+        // Kiểm tra capacity trước khi thêm
+        if (!canAddStudentToClass(classId)) {
+            throw new IllegalStateException("Lớp học đã đầy! Sức chứa: " + classEntity.getCapacity() + 
+                " sinh viên. Hiện tại có: " + classEntity.getCurrentStudentCount() + " sinh viên.");
+        }
+
+        // Kiểm tra sinh viên đã trong lớp chưa
+        if (classEntity.getStudents().contains(student)) {
+            throw new IllegalStateException("Sinh viên đã có trong lớp học này!");
+        }
+
+        classEntity.getStudents().add(student);
+        classRepository.save(classEntity);
+    }
+
+    @Override
+    public boolean canAddStudentToClass(Long classId) {
+        Class classEntity = classRepository.findById(classId).orElse(null);
+        return classEntity != null && classEntity.canAddStudent();
+    }
+
+    @Override
+    public int getAvailableSlots(Long classId) {
+        Class classEntity = classRepository.findById(classId).orElse(null);
+        return classEntity != null ? classEntity.getAvailableSlots() : 0;
+    }
+
+    @Override
+    public boolean isClassFull(Long classId) {
+        Class classEntity = classRepository.findById(classId).orElse(null);
+        return classEntity != null && classEntity.isFull();
     }
 
     @Override

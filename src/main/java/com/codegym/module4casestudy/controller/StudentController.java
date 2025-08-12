@@ -4,10 +4,12 @@ import com.codegym.module4casestudy.model.User;
 import com.codegym.module4casestudy.model.Class;
 import com.codegym.module4casestudy.model.Subject;
 import com.codegym.module4casestudy.model.ClassSubject;
+import com.codegym.module4casestudy.model.RegistrationPeriod;
 import com.codegym.module4casestudy.repository.ClassSubjectRepository;
 import com.codegym.module4casestudy.service.IClassService;
 import com.codegym.module4casestudy.service.ISubjectService;
 import com.codegym.module4casestudy.service.IUserService;
+import com.codegym.module4casestudy.service.IRegistrationPeriodService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -29,6 +31,7 @@ public class StudentController {
     @Autowired private IUserService userService;
     @Autowired private IClassService classService;
     @Autowired private ISubjectService subjectService;
+    @Autowired private IRegistrationPeriodService registrationPeriodService;
     @Autowired private PasswordEncoder passwordEncoder;
     @Autowired private ClassSubjectRepository classSubjectRepository;
 
@@ -368,29 +371,124 @@ public class StudentController {
         return "student/student-schedule";
     }
 
+    @GetMapping("/course-registration")
+    public String showCourseRegistration(Model model) {
+        User student = getCurrentStudent();
+        if (student == null) {
+            model.addAttribute("error", "Không tìm thấy thông tin sinh viên! Vui lòng đăng nhập lại.");
+            return "redirect:/login";
+        }
+        
+        // Kiểm tra trạng thái đăng ký
+        boolean canRegister = registrationPeriodService.canRegisterNow();
+        RegistrationPeriod currentPeriod = registrationPeriodService.getCurrentActivePeriod();
+        
+        // Lấy danh sách lớp học mà sinh viên đã đăng ký
+        List<Class> enrolledClasses = classService.findClassesByStudentId(student.getId());
+        Set<Long> enrolledIds = enrolledClasses.stream().map(Class::getId).collect(Collectors.toSet());
+        
+        // Lấy danh sách tất cả lớp học có thể đăng ký
+        List<Class> availableClasses = classService.findAll().stream()
+                .filter(c -> !enrolledIds.contains(c.getId()))
+                .collect(Collectors.toList());
+        
+        // Lấy danh sách môn học
+        List<Subject> subjects = subjectService.findActiveSubjects();
+        
+        model.addAttribute("student", student);
+        model.addAttribute("enrolledClasses", enrolledClasses);
+        model.addAttribute("availableClasses", availableClasses);
+        model.addAttribute("subjects", subjects);
+        model.addAttribute("canRegister", canRegister);
+        model.addAttribute("currentPeriod", currentPeriod);
+        model.addAttribute("registrationStatus", canRegister ? "OPEN" : "CLOSED");
+        
+        // Thêm các map để hiển thị thông tin
+        List<Class> allClasses = new ArrayList<>();
+        allClasses.addAll(enrolledClasses);
+        allClasses.addAll(availableClasses);
+        addClassMapsToModel(model, allClasses);
+        
+        return "student/student-course-registration";
+    }
+
+    @GetMapping("/schedule/{scheduleId}/detail")
+    public String showScheduleDetail(@PathVariable Long scheduleId, Model model) {
+        User student = getCurrentStudent();
+        if (student == null) {
+            model.addAttribute("error", "Không tìm thấy thông tin sinh viên! Vui lòng đăng nhập lại.");
+            return "redirect:/login";
+        }
+        
+        // Tìm lớp học theo ID (giả sử scheduleId là classId)
+        Class selectedClass = classService.findById(scheduleId).orElse(null);
+        if (selectedClass == null) {
+            model.addAttribute("error", "Không tìm thấy thông tin lịch học!");
+            return "redirect:/student/schedule";
+        }
+        
+        // Kiểm tra xem sinh viên có đăng ký lớp này không
+        List<Class> studentClasses = classService.findClassesByStudentId(student.getId());
+        boolean isEnrolled = studentClasses.stream().anyMatch(c -> c.getId().equals(scheduleId));
+        
+        if (!isEnrolled) {
+            model.addAttribute("error", "Bạn chưa đăng ký lớp học này!");
+            return "redirect:/student/schedule";
+        }
+        
+        model.addAttribute("student", student);
+        model.addAttribute("schedule", selectedClass);
+        model.addAttribute("classmates", new ArrayList<>()); // Placeholder - cần implement
+        model.addAttribute("myGrades", null); // Placeholder - cần implement
+        model.addAttribute("attendanceRate", 85); // Placeholder
+        model.addAttribute("completedSessions", 12); // Placeholder
+        model.addAttribute("totalSessions", 15); // Placeholder
+        model.addAttribute("daysRemaining", 45); // Placeholder
+        
+        return "student/student-schedule-detail";
+    }
+
     @PostMapping("/classes/{classId}/register")
     public String registerClass(@PathVariable Long classId, RedirectAttributes redirect) {
         User student = getCurrentStudent();
         if (student == null) return "redirect:/login";
 
         try {
+            // Kiểm tra trạng thái đăng ký trước tiên
+            String validationError = registrationPeriodService.validateRegistrationAction("đăng ký lớp học");
+            if (validationError != null) {
+                redirect.addFlashAttribute("error", validationError);
+                return "redirect:/student/course-registration";
+            }
+            
             Class target = classService.findById(classId).orElse(null);
             if (target == null) {
                 redirect.addFlashAttribute("error", "Không tìm thấy lớp học!");
-                return "redirect:/student/classes";
+                return "redirect:/student/course-registration";
             }
+            
+            // Kiểm tra sinh viên đã đăng ký chưa
             boolean exists = classService.findClassesByStudentId(student.getId())
                     .stream().anyMatch(c -> c.getId().equals(classId));
             if (exists) {
                 redirect.addFlashAttribute("error", "Bạn đã đăng ký lớp này rồi!");
-                return "redirect:/student/classes";
+                return "redirect:/student/course-registration";
             }
+            
+            // Kiểm tra capacity trước khi đăng ký
+            if (!classService.canAddStudentToClass(classId)) {
+                redirect.addFlashAttribute("error", "Lớp học đã đầy! Không thể đăng ký thêm.");
+                return "redirect:/student/course-registration";
+            }
+            
             classService.addStudentToClass(classId, student.getId());
             redirect.addFlashAttribute("message", "Đăng ký lớp học thành công!");
+        } catch (IllegalStateException e) {
+            redirect.addFlashAttribute("error", e.getMessage());
         } catch (Exception e) {
-            redirect.addFlashAttribute("error", "Có lỗi xảy ra khi đăng ký lớp!");
+            redirect.addFlashAttribute("error", "Có lỗi xảy ra khi đăng ký lớp: " + e.getMessage());
         }
-        return "redirect:/student/classes";
+        return "redirect:/student/course-registration";
     }
 
     @PostMapping("/classes/{classId}/unregister")
@@ -399,22 +497,31 @@ public class StudentController {
         if (student == null) return "redirect:/login";
 
         try {
+            // Kiểm tra trạng thái đăng ký trước tiên
+            String validationError = registrationPeriodService.validateRegistrationAction("hủy đăng ký lớp học");
+            if (validationError != null) {
+                redirect.addFlashAttribute("error", validationError);
+                return "redirect:/student/course-registration";
+            }
+            
             Class target = classService.findById(classId).orElse(null);
             if (target == null) {
                 redirect.addFlashAttribute("error", "Không tìm thấy lớp học!");
-                return "redirect:/student/classes";
+                return "redirect:/student/course-registration";
             }
+            
             boolean enrolled = classService.findClassesByStudentId(student.getId())
                     .stream().anyMatch(c -> c.getId().equals(classId));
             if (!enrolled) {
                 redirect.addFlashAttribute("error", "Bạn chưa đăng ký lớp này!");
-                return "redirect:/student/classes";
+                return "redirect:/student/course-registration";
             }
+            
             classService.removeStudentFromClass(classId, student.getId());
             redirect.addFlashAttribute("message", "Hủy đăng ký lớp học thành công!");
         } catch (Exception e) {
-            redirect.addFlashAttribute("error", "Có lỗi xảy ra khi hủy đăng ký lớp!");
+            redirect.addFlashAttribute("error", "Có lỗi xảy ra khi hủy đăng ký lớp: " + e.getMessage());
         }
-        return "redirect:/student/classes";
+        return "redirect:/student/course-registration";
     }
 }

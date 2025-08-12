@@ -47,12 +47,48 @@ public class SecurityConfig {
         System.out.println("=== Configuring HTTP security ===");
         http
             .authorizeRequests()
-                .antMatchers("/static/**", "/css/**", "/js/**", "/images/**", "/login/**").permitAll()
-                .antMatchers("/test/**").permitAll()
+                // Static resources - public access
+                .antMatchers("/static/**", "/css/**", "/js/**", "/images/**", "/webjars/**").permitAll()
+                .antMatchers("/favicon.ico").permitAll()
+                
+                // Public pages - no authentication required
                 .antMatchers("/", "/home", "/login", "/register").permitAll()
+                .antMatchers("/test/**").permitAll() // For testing only
+                
+                // Admin exclusive access
                 .antMatchers("/admin/**").hasRole("ADMIN")
+                .antMatchers("/api/admin/**").hasRole("ADMIN")
+                
+                // Teacher exclusive access
                 .antMatchers("/teacher/**").hasRole("TEACHER")
+                .antMatchers("/api/teacher/**").hasRole("TEACHER")
+                
+                // Student exclusive access
                 .antMatchers("/student/**").hasRole("STUDENT")
+                .antMatchers("/api/student/**").hasRole("STUDENT")
+                
+                // Grade management - only teachers and admins
+                .antMatchers("/grades/create", "/grades/update", "/grades/delete").hasAnyRole("TEACHER", "ADMIN")
+                .antMatchers("/grades/**").hasAnyRole("STUDENT", "TEACHER", "ADMIN")
+                
+                // Class management - admins and teachers
+                .antMatchers("/classes/create", "/classes/update", "/classes/delete").hasRole("ADMIN")
+                .antMatchers("/classes/**").hasAnyRole("TEACHER", "ADMIN")
+                
+                // User management - admin only
+                .antMatchers("/users/**").hasRole("ADMIN")
+                
+                // Subject management - admin only
+                .antMatchers("/subjects/**").hasRole("ADMIN")
+                
+                // Schedule management - teachers and admins
+                .antMatchers("/schedules/create", "/schedules/update", "/schedules/delete").hasAnyRole("TEACHER", "ADMIN")
+                .antMatchers("/schedules/**").hasAnyRole("STUDENT", "TEACHER", "ADMIN")
+                
+                // Registration periods - admin only
+                .antMatchers("/registration-periods/**").hasRole("ADMIN")
+                
+                // All other requests must be authenticated
                 .anyRequest().authenticated()
             .and()
             .formLogin()
@@ -68,9 +104,20 @@ public class SecurityConfig {
                 .deleteCookies("JSESSIONID")
                 .permitAll()
             .and()
-            .csrf().disable(); // Tạm thời disable CSRF cho dễ test
+            // Enable CSRF protection
+            .csrf()
+                .csrfTokenRepository(org.springframework.security.web.csrf.CookieCsrfTokenRepository.withHttpOnlyFalse())
+                .ignoringAntMatchers("/api/**") // Ignore CSRF for API endpoints if needed
+            .and()
+            // Additional security headers
+            .headers()
+                .frameOptions().deny()
+                .contentTypeOptions().and()
+                .httpStrictTransportSecurity(hstsConfig -> hstsConfig
+                    .maxAgeInSeconds(31536000)
+                    .includeSubDomains(true));
 
-        System.out.println("HTTP security configured successfully");
+        System.out.println("HTTP security configured with CSRF enabled and detailed URL authorization");
         return http.build();
     }
     

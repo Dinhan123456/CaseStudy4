@@ -13,37 +13,38 @@ CREATE TABLE users (
     enabled BOOLEAN DEFAULT TRUE
 );
 
----- students
-CREATE TABLE students (
-    id BIGINT PRIMARY KEY,
-    full_name VARCHAR(100),
-    email VARCHAR(100),
-    phone VARCHAR(20),
-    student_code VARCHAR(20) UNIQUE,
-    gender ENUM('M', 'F'),
-    date_of_birth DATE,
-    address TEXT,
-    class_id BIGINT,
-    active BOOLEAN DEFAULT TRUE,
-    FOREIGN KEY (class_id) REFERENCES classes(id)
-);
+-- Bỏ bảng students riêng biệt - chỉ dùng users và student_class trung gian
+-- students
+-- CREATE TABLE students (
+--     id BIGINT PRIMARY KEY,
+--     full_name VARCHAR(100),
+--     email VARCHAR(100),
+--     phone VARCHAR(20),
+--     student_code VARCHAR(20) UNIQUE,
+--     gender ENUM('M', 'F'),
+--     date_of_birth DATE,
+--     address TEXT,
+--     class_id BIGINT,
+--     active BOOLEAN DEFAULT TRUE,
+--     FOREIGN KEY (class_id) REFERENCES classes(id)
+-- );
 
 -- classes
 CREATE TABLE classes (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     description TEXT,
+    capacity INT NOT NULL DEFAULT 30,
     status BOOLEAN DEFAULT TRUE
 );
 
 -- teacher-class
-
- CREATE TABLE teacher_class (
+CREATE TABLE teacher_class (
     teacher_id BIGINT,
     class_id BIGINT,
     PRIMARY KEY (teacher_id, class_id),
-    FOREIGN KEY (teacher_id) REFERENCES users(id),
-    FOREIGN KEY (class_id) REFERENCES classes(id)
+    FOREIGN KEY (teacher_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE
 );
 
 -- subject
@@ -66,14 +67,28 @@ CREATE TABLE subjects (
     FOREIGN KEY (teacher_id) REFERENCES users(id)
 );
 
--- grades
+-- grades - Chuẩn hóa với constraint điểm 0-10 và FK users thay vì students
 CREATE TABLE grades (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     student_id BIGINT,
     subject_id BIGINT,
-    score FLOAT,
-    FOREIGN KEY (student_id) REFERENCES students(id),
-    FOREIGN KEY (subject_id) REFERENCES subjects(id)
+    class_id BIGINT,
+    -- Điểm 15 phút (5%)
+    grade_15 DECIMAL(4,2) CHECK (grade_15 >= 0 AND grade_15 <= 10),
+    -- Điểm giữa kỳ (20%)
+    grade_midterm DECIMAL(4,2) CHECK (grade_midterm >= 0 AND grade_midterm <= 10),
+    -- Điểm chuyên cần (5%)
+    grade_attendance DECIMAL(4,2) CHECK (grade_attendance >= 0 AND grade_attendance <= 10),
+    -- Điểm cuối kỳ (70%)
+    grade_final DECIMAL(4,2) CHECK (grade_final >= 0 AND grade_final <= 10),
+    -- Điểm trung bình (tự động tính)
+    average_grade DECIMAL(4,2) CHECK (average_grade >= 0 AND average_grade <= 10),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE,
+    FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_student_subject_class (student_id, subject_id, class_id)
 );
 
 -- rooms
@@ -115,15 +130,15 @@ CREATE TABLE timetables (
     FOREIGN KEY (teacher_id) REFERENCES users(id)
 );
 
--- schedules
- CREATE TABLE schedules (
+-- schedules - Chuẩn hóa day_of_week thành TINYINT và created_by thành FK users
+CREATE TABLE schedules (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     class_id BIGINT,
     subject_id BIGINT,
     teacher_id BIGINT,
     room_id BIGINT,
     time_slot_id BIGINT,
-    day_of_week ENUM('MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'),
+    day_of_week TINYINT NOT NULL CHECK (day_of_week >= 0 AND day_of_week <= 6), -- 0=CN, 1=T2, ..., 6=T7
     start_date DATE,
     end_date DATE,
     notes TEXT,
@@ -131,12 +146,17 @@ CREATE TABLE timetables (
     status VARCHAR(50),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    created_by VARCHAR(100),
-    FOREIGN KEY (class_id) REFERENCES classes(id),
-    FOREIGN KEY (subject_id) REFERENCES subjects(id),
-    FOREIGN KEY (teacher_id) REFERENCES users(id),
-    FOREIGN KEY (room_id) REFERENCES rooms(id),
-    FOREIGN KEY (time_slot_id) REFERENCES time_slots(id)
+    created_by BIGINT, -- FK đến users(id)
+    FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE,
+    FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE,
+    FOREIGN KEY (teacher_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE CASCADE,
+    FOREIGN KEY (time_slot_id) REFERENCES time_slots(id) ON DELETE CASCADE,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+    -- Index cho conflict checking
+    UNIQUE KEY unique_teacher_schedule (teacher_id, day_of_week, time_slot_id, start_date, end_date),
+    UNIQUE KEY unique_room_schedule (room_id, day_of_week, time_slot_id, start_date, end_date),
+    UNIQUE KEY unique_class_schedule (class_id, day_of_week, time_slot_id, start_date, end_date)
 );
 
 -- register-periods
@@ -155,7 +175,26 @@ CREATE TABLE registration_periods (
     created_by VARCHAR(100)
 );
 
--- sudent-register
+-- registration_periods
+CREATE TABLE registration_periods (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    period_name VARCHAR(100) NOT NULL,
+    start_time DATETIME NOT NULL,
+    end_time DATETIME NOT NULL,
+    description TEXT,
+    max_subjects_per_student INT DEFAULT 10,
+    max_credits_per_student INT DEFAULT 25,
+    status VARCHAR(20) DEFAULT 'SCHEDULED',
+    created_by BIGINT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    active BOOLEAN DEFAULT TRUE,
+    FOREIGN KEY (created_by) REFERENCES users(id),
+    CHECK (status IN ('SCHEDULED', 'OPEN', 'CLOSED', 'CANCELLED')),
+    CHECK (end_time > start_time)
+);
+
+-- student-register - Cập nhật FK từ students sang users
 CREATE TABLE student_registrations (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     student_id BIGINT,
@@ -165,16 +204,18 @@ CREATE TABLE student_registrations (
     active BOOLEAN DEFAULT TRUE,
     registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     notes TEXT,
-    FOREIGN KEY (student_id) REFERENCES students(id),
-    FOREIGN KEY (schedule_id) REFERENCES schedules(id),
-    FOREIGN KEY (registration_period_id) REFERENCES registration_periods(id)
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (schedule_id) REFERENCES schedules(id) ON DELETE CASCADE,
+    FOREIGN KEY (registration_period_id) REFERENCES registration_periods(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_student_schedule (student_id, schedule_id)
 );
 
--- student-class
+-- student-class - Cập nhật FK từ students sang users
 CREATE TABLE student_class (
     student_id BIGINT,
     class_id BIGINT,
+    enrolled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (student_id, class_id),
-    FOREIGN KEY (student_id) REFERENCES students(id),
-    FOREIGN KEY (class_id) REFERENCES classes(id)
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE
 );

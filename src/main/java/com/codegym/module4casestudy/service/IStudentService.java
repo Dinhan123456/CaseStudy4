@@ -6,6 +6,11 @@ import com.codegym.module4casestudy.model.Student;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * DEPRECATED: Service này đã được thay thế bằng IUserService
+ * Sử dụng IUserService.findByRole(Role.STUDENT) thay thế
+ */
+@Deprecated
 public interface IStudentService {
     
     List<Student> findAll();
