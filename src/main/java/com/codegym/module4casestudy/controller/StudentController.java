@@ -524,4 +524,109 @@ public class StudentController {
         }
         return "redirect:/student/course-registration";
     }
+
+    // JSON API endpoints for AJAX calls
+    @PostMapping("/api/classes/{classId}/register")
+    @ResponseBody
+    public Map<String, Object> registerClassApi(@PathVariable Long classId) {
+        Map<String, Object> response = new HashMap<>();
+        
+        User student = getCurrentStudent();
+        if (student == null) {
+            response.put("success", false);
+            response.put("message", "Vui lòng đăng nhập!");
+            return response;
+        }
+
+        try {
+            // Kiểm tra trạng thái đăng ký trước tiên
+            String validationError = registrationPeriodService.validateRegistrationAction("đăng ký lớp học");
+            if (validationError != null) {
+                response.put("success", false);
+                response.put("message", validationError);
+                return response;
+            }
+            
+            Class target = classService.findById(classId).orElse(null);
+            if (target == null) {
+                response.put("success", false);
+                response.put("message", "Không tìm thấy lớp học!");
+                return response;
+            }
+            
+            // Kiểm tra đã đăng ký chưa
+            List<Class> studentClasses = classService.findClassesByStudentId(student.getId());
+            boolean alreadyEnrolled = studentClasses.stream().anyMatch(c -> c.getId().equals(classId));
+            if (alreadyEnrolled) {
+                response.put("success", false);
+                response.put("message", "Bạn đã đăng ký lớp này rồi!");
+                return response;
+            }
+            
+            // Kiểm tra sức chứa lớp
+            if (!classService.canAddStudentToClass(classId)) {
+                response.put("success", false);
+                response.put("message", "Lớp học đã đầy!");
+                return response;
+            }
+            
+            classService.addStudentToClass(classId, student.getId());
+            response.put("success", true);
+            response.put("message", "Đăng ký lớp học thành công!");
+            
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Có lỗi xảy ra khi đăng ký lớp: " + e.getMessage());
+        }
+        
+        return response;
+    }
+
+    @PostMapping("/api/classes/{classId}/unregister")
+    @ResponseBody  
+    public Map<String, Object> unregisterClassApi(@PathVariable Long classId) {
+        Map<String, Object> response = new HashMap<>();
+        
+        User student = getCurrentStudent();
+        if (student == null) {
+            response.put("success", false);
+            response.put("message", "Vui lòng đăng nhập!");
+            return response;
+        }
+
+        try {
+            // Kiểm tra trạng thái đăng ký trước tiên
+            String validationError = registrationPeriodService.validateRegistrationAction("hủy đăng ký lớp học");
+            if (validationError != null) {
+                response.put("success", false);
+                response.put("message", validationError);
+                return response;
+            }
+            
+            Class target = classService.findById(classId).orElse(null);
+            if (target == null) {
+                response.put("success", false);
+                response.put("message", "Không tìm thấy lớp học!");
+                return response;
+            }
+            
+            boolean enrolled = classService.findClassesByStudentId(student.getId())
+                    .stream().anyMatch(c -> c.getId().equals(classId));
+            if (!enrolled) {
+                response.put("success", false);
+                response.put("message", "Bạn chưa đăng ký lớp này!");
+                return response;
+            }
+            
+            classService.removeStudentFromClass(classId, student.getId());
+            response.put("success", true);
+            response.put("message", "Hủy đăng ký lớp học thành công!");
+            
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Có lỗi xảy ra khi hủy đăng ký lớp: " + e.getMessage());
+        }
+        
+        return response;
+    }
 }

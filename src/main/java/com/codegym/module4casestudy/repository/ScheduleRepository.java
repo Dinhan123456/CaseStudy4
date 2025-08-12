@@ -17,6 +17,10 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
     // Tìm lịch theo giảng viên
     List<Schedule> findByTeacherAndActiveTrue(User teacher);
     
+    // Tìm lịch theo teacher ID
+    @Query("SELECT s FROM Schedule s WHERE s.teacher.id = :teacherId AND s.active = true")
+    List<Schedule> findByTeacherIdAndActiveTrue(@Param("teacherId") Long teacherId);
+    
     // Tìm lịch theo lớp học
     @Query("SELECT s FROM Schedule s WHERE s.classEntity.id = :classId AND s.active = true")
     List<Schedule> findByClassId(@Param("classId") Long classId);
@@ -173,19 +177,19 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
 
     // Phương thức đăng ký sinh viên vào lớp (cần custom implementation)
     @Modifying
-    @Query(value = "INSERT INTO class_students (class_id, student_id) " +
+    @Query(value = "INSERT INTO student_class (class_id, student_id) " +
                    "SELECT s.class_id, :studentId FROM schedules s " +
                    "WHERE s.id = :scheduleId AND s.active = true " +
-                   "AND NOT EXISTS (SELECT 1 FROM class_students cs " +
-                   "WHERE cs.class_id = s.class_id AND cs.student_id = :studentId)", 
+                   "AND NOT EXISTS (SELECT 1 FROM student_class sc " +
+                   "WHERE sc.class_id = s.class_id AND sc.student_id = :studentId)", 
            nativeQuery = true)
     int registerStudentForSchedule(@Param("studentId") Long studentId, 
                                    @Param("scheduleId") Long scheduleId);
     
     @Modifying
-    @Query(value = "DELETE FROM class_students cs " +
-                   "WHERE cs.student_id = :studentId " +
-                   "AND cs.class_id = (SELECT s.class_id FROM schedules s WHERE s.id = :scheduleId)", 
+    @Query(value = "DELETE FROM student_class sc " +
+                   "WHERE sc.student_id = :studentId " +
+                   "AND sc.class_id = (SELECT s.class_id FROM schedules s WHERE s.id = :scheduleId)", 
            nativeQuery = true)
     int unregisterStudentFromSchedule(@Param("studentId") Long studentId, 
                                       @Param("scheduleId") Long scheduleId);

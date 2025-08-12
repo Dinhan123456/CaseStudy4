@@ -56,7 +56,7 @@ public class ScheduleServiceImpl implements IScheduleService {
 
     @Override
     public List<Schedule> findByTeacherId(Long teacherId) {
-        return scheduleRepository.findByTeacherAndDay(teacherId, null);
+        return scheduleRepository.findByTeacherIdAndActiveTrue(teacherId);
     }
 
     @Override

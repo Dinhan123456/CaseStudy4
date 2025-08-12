@@ -1,134 +1,147 @@
-package com.codegym.module4casestudy.model;
+ package com.codegym.module4casestudy.model;
 
-import javax.persistence.*;
-import java.time.LocalDate;
+ import javax.persistence.*;
+ import java.time.LocalDate;
+ import java.util.HashSet;
 
-@Entity
-@Table(name = "students")
-public class Student {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+ @Entity
+ @Table(name = "students")
+ public class Student {
+     @Id
+     private Long id;
+     @MapsId
+     @OneToOne
+     @JoinColumn(name = "id")
+     private User user;
 
-    @Column(nullable = false)
-    private String studentCode;
 
-    @Column(nullable = false)
-    private String fullName;
+     @Column(name = "full_name")
+     private String fullName;
 
-    @Column(nullable = false)
-    private String email;
+     private String email;
+     private String phone;
 
-    private String phone;
 
-    @Column(nullable = false)
-    private LocalDate dateOfBirth;
+     @Column(name = "student_code", unique = true)
+     private String studentCode;
 
-    private String address;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private Gender gender;
+     private LocalDate dateOfBirth;
+     private String address;
 
-    @ManyToOne
-    @JoinColumn(name = "class_id")
-    private Class class_;
+     @Enumerated(EnumType.STRING)
+     private Gender gender;
 
-    @Column(nullable = false)
-    private boolean active = true;
+     @ManyToOne
+     @JoinColumn(name = "class_id")
+     private Class class_;
 
-    public enum Gender {
-        MALE, FEMALE, OTHER
-    }
+     private Boolean active = true;
 
-    public Student() {
-    }
 
-    public Student(String studentCode, String fullName, String email, LocalDate dateOfBirth, Gender gender) {
-        this.studentCode = studentCode;
-        this.fullName = fullName;
-        this.email = email;
-        this.dateOfBirth = dateOfBirth;
-        this.gender = gender;
-    }
+     public enum Gender {
+         MALE, FEMALE, OTHER
+     }
 
-    public Long getId() {
-        return id;
-    }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
 
-    public String getStudentCode() {
-        return studentCode;
-    }
+     public Student() {
+     }
 
-    public void setStudentCode(String studentCode) {
-        this.studentCode = studentCode;
-    }
+     public Student(String studentCode, String fullName, String email, LocalDate dateOfBirth, Gender gender) {
+         this.studentCode = studentCode;
+         this.fullName = fullName;
+         this.email = email;
+         this.dateOfBirth = dateOfBirth;
+         this.gender = gender;
+     }
 
-    public String getFullName() {
-        return fullName;
-    }
+     public Long getId() {
+         return id;
+     }
 
-    public void setFullName(String fullName) {
-        this.fullName = fullName;
-    }
+     public void setId(Long id) {
+         this.id = id;
+     }
 
-    public String getEmail() {
-        return email;
-    }
+     public User getUser() {
+         return user;
+     }
 
-    public void setEmail(String email) {
-        this.email = email;
-    }
+     public void setUser(User user) {
+         this.user = user;
+     }
 
-    public String getPhone() {
-        return phone;
-    }
+     public String getFullName() {
+         return fullName;
+     }
 
-    public void setPhone(String phone) {
-        this.phone = phone;
-    }
+     public void setFullName(String fullName) {
+         this.fullName = fullName;
+     }
 
-    public LocalDate getDateOfBirth() {
-        return dateOfBirth;
-    }
+     public String getEmail() {
+         return email;
+     }
 
-    public void setDateOfBirth(LocalDate dateOfBirth) {
-        this.dateOfBirth = dateOfBirth;
-    }
+     public void setEmail(String email) {
+         this.email = email;
+     }
 
-    public String getAddress() {
-        return address;
-    }
+     public String getPhone() {
+         return phone;
+     }
 
-    public void setAddress(String address) {
-        this.address = address;
-    }
+     public void setPhone(String phone) {
+         this.phone = phone;
+     }
 
-    public Gender getGender() {
-        return gender;
-    }
+     public String getStudentCode() {
+         return studentCode;
+     }
 
-    public void setGender(Gender gender) {
-        this.gender = gender;
-    }
+     public void setStudentCode(String studentCode) {
+         this.studentCode = studentCode;
+     }
 
-    public Class getClass_() {
-        return class_;
-    }
+     public LocalDate getDateOfBirth() {
+         return dateOfBirth;
+     }
 
-    public void setClass_(Class class_) {
-        this.class_ = class_;
-    }
+     public void setDateOfBirth(LocalDate dateOfBirth) {
+         this.dateOfBirth = dateOfBirth;
+     }
 
-    public boolean isActive() {
-        return active;
-    }
+     public String getAddress() {
+         return address;
+     }
 
-    public void setActive(boolean active) {
-        this.active = active;
-    }
-} 
+     public void setAddress(String address) {
+         this.address = address;
+     }
+
+     public Gender getGender() {
+         return gender;
+     }
+
+     public void setGender(Gender gender) {
+         this.gender = gender;
+     }
+
+     public Class getClass_() {
+         return class_;
+     }
+
+     public void setClass_(Class class_) {
+         this.class_ = class_;
+     }
+
+     public Boolean getActive() {
+         return active;
+     }
+
+     public void setActive(Boolean active) {
+         this.active = active;
+     }
+ }
+
