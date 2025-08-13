@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>403 - Truy cập bị từ chối</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #F9F9F9;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #111;
+        }
+        .error-container {
+            background: #fff;
+            border-radius: 16px;
+            padding: 60px 80px;
+            text-align: center;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
+            max-width: 500px;
+            width: 90%;
+        }
+        .error-code {
+            font-size: 8rem;
+            font-weight: bold;
+            color: #111;
+            margin-bottom: 1rem;
+        }
+        .error-title {
+            font-size: 2rem;
+            color: #111;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+        .error-message {
+            font-size: 1.1rem;
+            color: #444;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+        .error-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            color: #111;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background-color: #111;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: background-color 0.2s ease;
+            margin: 0 10px;
+            border: none;
+        }
+        .btn:hover {
+            background-color: #333;
+            transform: none;
+            box-shadow: none;
+        }
+        .btn-secondary {
+            background-color: #666;
+        }
+        .btn-group {
+            margin-top: 2rem;
+        }
+        @media (max-width: 768px) {
+            .error-container {
+                padding: 2rem;
+                margin: 1rem;
+            }
+            .error-code {
+                font-size: 6rem;
+            }
+            .error-title {
+                font-size: 1.5rem;
+            }
+            .btn {
+                display: block;
+                margin: 10px auto;
+                max-width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="error-container">
+    <div class="error-icon">:no_entry_sign:</div>
+    <div class="error-code">403</div>
+    <h1 class="error-title">Truy cập bị từ chối</h1>
+    <p class="error-message">
+        Xin lỗi, bạn không có quyền truy cập vào trang này.
+        Vui lòng liên hệ với quản trị viên nếu bạn tin rằng đây là một lỗi.
+    </p>
+    <div class="btn-group">
+        <a href="/" class="btn">Về trang chủ</a>
+        <a href="/login" class="btn btn-secondary">Đăng nhập</a>
+    </div>
+</div>
+</body>
+</html>

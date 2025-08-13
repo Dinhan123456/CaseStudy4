@@ -1,0 +1,132 @@
+
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lỗi - Đã xảy ra sự cố</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #F9F9F9;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #111;
+        }
+        .error-container {
+            background: #fff;
+            border-radius: 16px;
+            padding: 60px 80px;
+            text-align: center;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
+            max-width: 500px;
+            width: 90%;
+        }
+        .error-code {
+            font-size: 8rem;
+            font-weight: bold;
+            color: #111;
+            margin-bottom: 1rem;
+        }
+        .error-title {
+            font-size: 2rem;
+            color: #111;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+        .error-message {
+            font-size: 1.1rem;
+            color: #444;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+        .error-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            color: #111;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background-color: #111;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: background-color 0.2s ease;
+            margin: 0 10px;
+            border: none;
+        }
+        .btn:hover {
+            background-color: #333;
+            transform: none;
+            box-shadow: none;
+        }
+        .btn-secondary {
+            background-color: #666;
+        }
+        .btn-group {
+            margin-top: 2rem;
+        }
+        .error-details {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: #FDFDFD;
+            border-radius: 10px;
+            text-align: left;
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: #444;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+        }
+        @media (max-width: 768px) {
+            .error-container {
+                padding: 2rem;
+                margin: 1rem;
+            }
+            .error-code {
+                font-size: 6rem;
+            }
+            .error-title {
+                font-size: 1.5rem;
+            }
+            .btn {
+                display: block;
+                margin: 10px auto;
+                max-width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="error-container">
+    <div class="error-icon">:warning:</div>
+    <div class="error-code" th:text="${status}">500</div>
+    <h1 class="error-title" th:text="${error}">Đã xảy ra lỗi</h1>
+    <p class="error-message">
+        Xin lỗi, đã xảy ra một lỗi không mong muốn.
+        Vui lòng thử lại sau hoặc liên hệ với quản trị viên nếu vấn đề vẫn tiếp tục.
+    </p>
+    <div class="btn-group">
+        <a href="/" class="btn">Về trang chủ</a>
+        <a href="javascript:history.back()" class="btn btn-secondary">Quay lại</a>
+    </div>
+    <!-- Hiển thị chi tiết lỗi trong môi trường development -->
+    <div class="error-details" th:if="${@environment.getActiveProfiles().length > 0 and @environment.getActiveProfiles()[0] == 'dev'}">
+        <strong>Chi tiết lỗi:</strong><br>
+        <span th:text="${message}">Không có thông tin chi tiết</span><br>
+        <strong>Thời gian:</strong> <span th:text="${#dates.format(#dates.createNow(), 'dd/MM/yyyy HH:mm:ss')}"></span><br>
+        <strong>Path:</strong> <span th:text="${path}">Không xác định</span>
+    </div>
+</div>
+</body>
+</html>

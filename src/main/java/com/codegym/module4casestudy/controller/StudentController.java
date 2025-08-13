@@ -343,7 +343,11 @@ public class StudentController {
     }
 
     @GetMapping("/grades")
-    public String showStudentGrades(Model model) {
+    public String showStudentGrades(
+            @RequestParam(value = "semester", required = false) String semester,
+            @RequestParam(value = "subjectId", required = false) Long subjectId,
+            @RequestParam(value = "status", required = false) String status,
+            Model model) {
         User student = getCurrentStudent();
         if (student == null) {
             model.addAttribute("error", "Không tìm thấy thông tin sinh viên! Vui lòng đăng nhập lại.");
@@ -352,9 +356,33 @@ public class StudentController {
         List<Class> studentClasses = classService.findClassesByStudentId(student.getId());
         List<Subject> subjects = subjectService.findActiveSubjects();
 
+        // Lấy tất cả điểm của sinh viên
+        List<com.codegym.module4casestudy.model.Grade> allGrades = classService.getGradesByStudentId(student.getId());
+        // Lọc theo học kỳ
+        if (semester != null && !semester.isEmpty()) {
+            allGrades = allGrades.stream().filter(g -> semester.equals(g.getSemester())).collect(Collectors.toList());
+        }
+        // Lọc theo môn học
+        if (subjectId != null) {
+            allGrades = allGrades.stream().filter(g -> g.getSubject() != null && subjectId.equals(g.getSubject().getId())).collect(Collectors.toList());
+        }
+        // Lọc theo trạng thái (pass/fail/studying)
+        if (status != null && !status.isEmpty()) {
+            allGrades = allGrades.stream().filter(g -> {
+                if ("pass".equals(status)) return g.getAverageGrade() != null && g.getAverageGrade() >= 5.5;
+                if ("fail".equals(status)) return g.getAverageGrade() != null && g.getAverageGrade() < 5.5;
+                if ("studying".equals(status)) return g.getAverageGrade() == null;
+                return true;
+            }).collect(Collectors.toList());
+        }
+
         model.addAttribute("student", student);
         model.addAttribute("classes", studentClasses);
         model.addAttribute("subjects", subjects);
+        model.addAttribute("grades", allGrades);
+        model.addAttribute("selectedSemester", semester);
+        model.addAttribute("selectedSubjectId", subjectId);
+        model.addAttribute("selectedStatus", status);
         return "student/student-grades";
     }
 

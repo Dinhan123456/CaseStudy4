@@ -1,3 +1,4 @@
+// ...existing code...
 package com.codegym.module4casestudy.service;
 
 import com.codegym.module4casestudy.model.Class;
@@ -287,4 +288,9 @@ public class ClassServiceImpl implements IClassService {
 
 
 
+
+    @Override
+    public java.util.List<com.codegym.module4casestudy.model.Grade> getGradesByStudentId(Long studentId) {
+        return gradeRepository.findByStudentIdAndActiveTrue(studentId);
+    }
 }

@@ -1,0 +1,136 @@
+
+403
+2:03
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>404 - Trang không tìm thấy</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #F9F9F9;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #111;
+    }
+    .error-container {
+      background: #fff;
+      border-radius: 16px;
+      padding: 60px 80px;
+      text-align: center;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
+      max-width: 500px;
+      width: 90%;
+    }
+    .error-code {
+      font-size: 8rem;
+      font-weight: bold;
+      color: #111;
+      margin-bottom: 1rem;
+    }
+    .error-title {
+      font-size: 2rem;
+      color: #111;
+      margin-bottom: 1rem;
+      font-weight: 600;
+    }
+    .error-message {
+      font-size: 1.1rem;
+      color: #444;
+      margin-bottom: 2rem;
+      line-height: 1.6;
+    }
+    .error-icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+      color: #111;
+    }
+    .btn {
+      display: inline-block;
+      padding: 12px 30px;
+      background-color: #111;
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: background-color 0.2s ease;
+      margin: 0 10px;
+      border: none;
+    }
+    .btn:hover {
+      background-color: #333;
+      transform: none;
+      box-shadow: none;
+    }
+    .btn-secondary {
+      background-color: #666;
+    }
+    .btn-group {
+      margin-top: 2rem;
+    }
+    .search-box {
+      margin: 2rem 0;
+      padding: 1rem;
+      background: #FDFDFD;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+    }
+    .search-box input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 1rem;
+      background-color: #FDFDFD;
+    }
+    .search-box input:focus {
+      border-color: #000;
+      box-shadow: none;
+    }
+    @media (max-width: 768px) {
+      .error-container {
+        padding: 2rem;
+        margin: 1rem;
+      }
+      .error-code {
+        font-size: 6rem;
+      }
+      .error-title {
+        font-size: 1.5rem;
+      }
+      .btn {
+        display: block;
+        margin: 10px auto;
+        max-width: 200px;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="error-container">
+  <div class="error-icon">:mag:</div>
+  <div class="error-code">404</div>
+  <h1 class="error-title">Trang không tìm thấy</h1>
+  <p class="error-message">
+    Xin lỗi, trang bạn đang tìm kiếm không tồn tại hoặc đã được di chuyển.
+    Vui lòng kiểm tra lại URL hoặc sử dụng các liên kết bên dưới.
+  </p>
+  <div class="search-box">
+    <input type="text" placeholder="Tìm kiếm trang khác..." onkeypress="if(event.keyCode==13) window.location.href='/search?q='+this.value">
+  </div>
+  <div class="btn-group">
+    <a href="/" class="btn">Về trang chủ</a>
+    <a href="javascript:history.back()" class="btn btn-secondary">Quay lại</a>
+  </div>
+</div>
+</body>
+</html>

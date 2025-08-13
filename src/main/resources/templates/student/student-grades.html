@@ -295,7 +295,7 @@
                             <div class="d-flex justify-content-between">
                                 <div>
                                     <h6>Điểm TB tích lũy</h6>
-                                    <h3>8.25</h3>
+                                    <h3 th:text="${avgGrade != null ? avgGrade : '-'}">-</h3>
                                 </div>
                                 <div class="align-self-center">
                                     <i class="fas fa-chart-line fa-2x"></i>
@@ -310,7 +310,7 @@
                             <div class="d-flex justify-content-between">
                                 <div>
                                     <h6>Tín chỉ tích lũy</h6>
-                                    <h3>45</h3>
+                                    <h3 th:text="${totalCredits != null ? totalCredits : '-'}">-</h3>
                                 </div>
                                 <div class="align-self-center">
                                     <i class="fas fa-medal fa-2x"></i>
@@ -325,7 +325,7 @@
                             <div class="d-flex justify-content-between">
                                 <div>
                                     <h6>Xếp loại học tập</h6>
-                                    <h3>Giỏi</h3>
+                                    <h3 th:text="${gradeRank != null ? gradeRank : '-'}">-</h3>
                                 </div>
                                 <div class="align-self-center">
                                     <i class="fas fa-trophy fa-2x"></i>
@@ -340,7 +340,7 @@
                             <div class="d-flex justify-content-between">
                                 <div>
                                     <h6>Học kỳ hiện tại</h6>
-                                    <h3>2024-2025</h3>
+                                    <h3 th:text="${currentSemester != null ? currentSemester : '-'}">-</h3>
                                 </div>
                                 <div class="align-self-center">
                                     <i class="fas fa-calendar fa-2x"></i>
@@ -357,36 +357,42 @@
                     <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Bộ lọc điểm số</h5>
                 </div>
                 <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <label for="semesterFilter" class="form-label">Học kỳ</label>
-                            <select class="form-select" id="semesterFilter" onchange="filterGrades()">
-                                <option value="">Tất cả học kỳ</option>
-                                <option value="2024-1">Học kỳ 1 (2024-2025)</option>
-                                <option value="2024-2" selected>Học kỳ 2 (2024-2025)</option>
-                                <option value="2023-2">Học kỳ 2 (2023-2024)</option>
-                            </select>
+                    <form method="get" th:action="@{/student/grades}">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label for="semesterFilter" class="form-label">Học kỳ</label>
+                                <select class="form-select" id="semesterFilter" name="semester">
+                                    <option value="" th:selected="${selectedSemester == null or selectedSemester == ''}">Tất cả học kỳ</option>
+                                    <option th:each="subject : ${subjects}" th:value="${subject.semester}" th:text="${subject.semester}" th:selected="${selectedSemester == subject.semester}"></option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="subjectFilter" class="form-label">Môn học</label>
+                                <select class="form-select" id="subjectFilter" name="subjectId">
+                                    <option value="" th:selected="${selectedSubjectId == null}">Tất cả môn học</option>
+                                    <option th:each="subject : ${subjects}"
+                                            th:value="${subject.id}"
+                                            th:text="${subject.name}"
+                                            th:selected="${selectedSubjectId == subject.id}">
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="statusFilter" class="form-label">Trạng thái</label>
+                                <select class="form-select" id="statusFilter" name="status">
+                                    <option value="" th:selected="${selectedStatus == null or selectedStatus == ''}">Tất cả</option>
+                                    <option value="pass" th:selected="${selectedStatus == 'pass'}">Đã qua môn</option>
+                                    <option value="fail" th:selected="${selectedStatus == 'fail'}">Chưa qua môn</option>
+                                    <option value="studying" th:selected="${selectedStatus == 'studying'}">Đang học</option>
+                                </select>
+                            </div>
                         </div>
-                        <div class="col-md-4">
-                            <label for="subjectFilter" class="form-label">Môn học</label>
-                            <select class="form-select" id="subjectFilter" onchange="filterGrades()">
-                                <option value="">Tất cả môn học</option>
-                                <option th:each="subject : ${subjects}"
-                                        th:value="${subject.id}"
-                                        th:text="${subject.name}">
-                                </option>
-                            </select>
+                        <div class="row mt-3">
+                            <div class="col text-end">
+                                <button type="submit" class="btn btn-primary">Lọc</button>
+                            </div>
                         </div>
-                        <div class="col-md-4">
-                            <label for="statusFilter" class="form-label">Trạng thái</label>
-                            <select class="form-select" id="statusFilter" onchange="filterGrades()">
-                                <option value="">Tất cả</option>
-                                <option value="pass">Đã qua môn</option>
-                                <option value="fail">Chưa qua môn</option>
-                                <option value="studying">Đang học</option>
-                            </select>
-                        </div>
-                    </div>
+                    </form>
                 </div>
             </div>
 
@@ -421,74 +427,38 @@
                             </tr>
                             </thead>
                             <tbody id="gradesTableBody">
-                            <!-- Dữ liệu mẫu -->
-                            <tr>
-                                <td>1</td>
+                            <tr th:each="grade, iterStat : ${grades}">
+                                <td th:text="${iterStat.index + 1}">1</td>
                                 <td>
                                     <div>
-                                        <strong>Lập trình Java</strong><br>
-                                        <small class="text-muted">Học kỳ 2 (2024-2025)</small>
+                                        <strong th:text="${grade.subject != null ? grade.subject.name : 'N/A'}">Môn học</strong><br>
+                                        <small class="text-muted" th:text="${grade.semester}">Học kỳ</small>
                                     </div>
                                 </td>
-                                <td><span class="badge bg-info">3</span></td>
-                                <td>9.5</td>
-                                <td>8.5</td>
-                                <td>9.0</td>
-                                <td><strong class="text-success">8.8</strong></td>
-                                <td><strong class="text-success">3.5</strong></td>
-                                <td><span class="badge bg-success">Giỏi</span></td>
-                                <td><span class="badge bg-success">Qua môn</span></td>
+                                <td><span class="badge bg-info" th:text="${grade.subject != null && grade.subject.credits != null ? grade.subject.credits : '-'}">-</span></td>
+                                <td th:text="${grade.gradeAttendance != null ? grade.gradeAttendance : '-'}">-</td>
+                                <td th:text="${grade.gradeMidterm != null ? grade.gradeMidterm : '-'}">-</td>
+                                <td th:text="${grade.gradeFinal != null ? grade.gradeFinal : '-'}">-</td>
+                                <td>
+                                    <span th:if="${grade.averageGrade != null}" th:text="${grade.averageGrade}" th:classappend="${grade.averageGrade >= 8.5 ? 'text-success' : (grade.averageGrade >= 7.0 ? 'text-primary' : (grade.averageGrade >= 5.5 ? 'text-warning' : 'text-danger'))}"></span>
+                                    <span th:if="${grade.averageGrade == null}" class="text-muted">Đang học</span>
+                                </td>
+                                <td>
+                                    <span th:if="${grade.averageGrade != null}" th:text="${T(java.lang.String).format('%.1f', grade.averageGrade / 2.5)}"></span>
+                                    <span th:if="${grade.averageGrade == null}" class="text-muted">-</span>
+                                </td>
+                                <td>
+                                    <span th:if="${grade.gradeRank != null}" th:text="${grade.gradeRank}" th:classappend="${grade.gradeRank == 'Giỏi' ? 'badge bg-success' : (grade.gradeRank == 'Khá' ? 'badge bg-primary' : (grade.gradeRank == 'Yếu' ? 'badge bg-danger' : 'badge bg-secondary'))}"></span>
+                                    <span th:if="${grade.gradeRank == null}" class="badge bg-secondary">Chưa có</span>
+                                </td>
+                                <td>
+                                    <span th:if="${grade.averageGrade != null && grade.averageGrade >= 5.5}" class="badge bg-success">Qua môn</span>
+                                    <span th:if="${grade.averageGrade != null && grade.averageGrade < 5.5}" class="badge bg-danger">Không qua môn</span>
+                                    <span th:if="${grade.averageGrade == null}" class="badge bg-warning">Đang học</span>
+                                </td>
                             </tr>
-                            <tr>
-                                <td>2</td>
-                                <td>
-                                    <div>
-                                        <strong>Spring Framework</strong><br>
-                                        <small class="text-muted">Học kỳ 2 (2024-2025)</small>
-                                    </div>
-                                </td>
-                                <td><span class="badge bg-info">4</span></td>
-                                <td>8.0</td>
-                                <td>7.5</td>
-                                <td>8.5</td>
-                                <td><strong class="text-primary">8.1</strong></td>
-                                <td><strong class="text-primary">3.2</strong></td>
-                                <td><span class="badge bg-primary">Khá</span></td>
-                                <td><span class="badge bg-success">Qua môn</span></td>
-                            </tr>
-                            <tr>
-                                <td>3</td>
-                                <td>
-                                    <div>
-                                        <strong>Cơ sở dữ liệu</strong><br>
-                                        <small class="text-muted">Học kỳ 2 (2024-2025)</small>
-                                    </div>
-                                </td>
-                                <td><span class="badge bg-info">3</span></td>
-                                <td>9.0</td>
-                                <td>-</td>
-                                <td>-</td>
-                                <td><span class="text-muted">Đang học</span></td>
-                                <td><span class="text-muted">-</span></td>
-                                <td><span class="badge bg-secondary">Chưa có</span></td>
-                                <td><span class="badge bg-warning">Đang học</span></td>
-                            </tr>
-                            <tr>
-                                <td>4</td>
-                                <td>
-                                    <div>
-                                        <strong>Toán cao cấp A1</strong><br>
-                                        <small class="text-muted">Học kỳ 1 (2024-2025)</small>
-                                    </div>
-                                </td>
-                                <td><span class="badge bg-info">3</span></td>
-                                <td>6.0</td>
-                                <td>5.5</td>
-                                <td>4.5</td>
-                                <td><strong class="text-danger">5.1</strong></td>
-                                <td><strong class="text-danger">1.0</strong></td>
-                                <td><span class="badge bg-danger">Yếu</span></td>
-                                <td><span class="badge bg-danger">Không qua môn</span></td>
+                            <tr th:if="${#lists.isEmpty(grades)}">
+                                <td colspan="10" class="text-center text-muted">Không có dữ liệu điểm phù hợp.</td>
                             </tr>
                             </tbody>
                         </table>

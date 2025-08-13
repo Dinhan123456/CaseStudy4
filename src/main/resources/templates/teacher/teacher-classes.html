@@ -125,15 +125,15 @@
                                 <div class="card-body">
                                     <p class="card-text">
                                         <i class="fas fa-book me-2"></i>
-                                        <strong>Môn học:</strong> <span th:text="${class.subject?.name ?: 'Chưa xác định'}">Môn học</span>
+<strong>Môn học:</strong> <span th:text="${class.subject != null ? class.subject.name : 'Chưa xác định'}">Môn học</span>
                                     </p>
                                     <p class="card-text">
                                         <i class="fas fa-users me-2"></i>
-                                        <strong>Số sinh viên:</strong> <span th:text="${class.students?.size() ?: 0}">0</span>
+<strong>Số sinh viên:</strong> <span th:text="${class.students != null ? class.students.size() : 0}">0</span>
                                     </p>
                                     <p class="card-text">
                                         <i class="fas fa-calendar me-2"></i>
-                                        <strong>Thời gian:</strong> <span th:text="${class.schedule ?: 'Chưa xác định'}">Chưa xác định</span>
+<strong>Thời gian:</strong> <span th:text="${class.schedule != null ? class.schedule : 'Chưa xác định'}">Chưa xác định</span>
                                     </p>
                                 </div>
                                 <div class="card-footer bg-white">

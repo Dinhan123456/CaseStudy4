@@ -59,4 +59,7 @@ public interface IClassService {
 
     List<Class> findClassesByStudentId(Long studentId);
     List<Class> findRecentClassesForStudentWithFetch(Long studentId);
+
+    // Lấy danh sách điểm của sinh viên
+    java.util.List<com.codegym.module4casestudy.model.Grade> getGradesByStudentId(Long studentId);
 }
