@@ -1,6 +1,7 @@
 package com.codegym.module4casestudy.controller;
 
 import com.codegym.module4casestudy.model.*;
+import com.codegym.module4casestudy.model.ScheduleStatus;
 import com.codegym.module4casestudy.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
@@ -121,7 +122,7 @@ public class TeacherScheduleController {
             return "redirect:/teacher/schedules";
         }
 
-        if (schedule.getStatus() == Schedule.ScheduleStatus.PENDING) {
+        if (schedule.getStatus() == ScheduleStatus.PENDING) {
             schedule = scheduleService.confirmSchedule(id);
             if (schedule != null) {
                 redirectAttributes.addFlashAttribute("message", "Đã xác nhận lịch giảng dạy!");

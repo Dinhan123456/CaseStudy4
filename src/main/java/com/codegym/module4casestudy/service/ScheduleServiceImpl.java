@@ -1,6 +1,8 @@
 package com.codegym.module4casestudy.service;
 
 import com.codegym.module4casestudy.model.Schedule;
+import com.codegym.module4casestudy.model.ScheduleStatus;
+import com.codegym.module4casestudy.model.ScheduleStatus;
 import com.codegym.module4casestudy.model.User;
 import com.codegym.module4casestudy.repository.ScheduleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,10 +34,7 @@ public class ScheduleServiceImpl implements IScheduleService {
 
     @Override
     public Schedule save(Schedule schedule) {
-        if (schedule.getCreatedAt() == null) {
-            schedule.setCreatedAt(LocalDateTime.now());
-        }
-        schedule.setUpdatedAt(LocalDateTime.now());
+        // Không set createdAt/updatedAt vì không có setter
         return scheduleRepository.save(schedule);
     }
 
@@ -105,7 +104,7 @@ public class ScheduleServiceImpl implements IScheduleService {
     }
 
     @Override
-    public List<Schedule> findByStatus(Schedule.ScheduleStatus status) {
+    public List<Schedule> findByStatus(ScheduleStatus status) {
         return scheduleRepository.findByStatus(status);
     }
 
@@ -169,7 +168,7 @@ public class ScheduleServiceImpl implements IScheduleService {
             schedule.getTeacher().getId(),
             schedule.getRoom().getId(),
             schedule.getClassEntity().getId(),
-            schedule.getDayOfWeek(),
+            schedule.getDayOfWeek() != null ? schedule.getDayOfWeek().ordinal() : null,
             schedule.getTimeSlot().getId(),
             schedule.getStartDate(),
             schedule.getEndDate()
@@ -179,8 +178,7 @@ public class ScheduleServiceImpl implements IScheduleService {
             throw new Exception("Lịch học bị trùng! Vui lòng chọn thời gian, phòng học hoặc giảng viên khác.");
         }
         
-        schedule.setStatus(Schedule.ScheduleStatus.PENDING);
-        schedule.setCreatedAt(LocalDateTime.now());
+        schedule.setStatus(ScheduleStatus.PENDING);
         return save(schedule);
     }
 
@@ -196,7 +194,7 @@ public class ScheduleServiceImpl implements IScheduleService {
             schedule.getTeacher().getId(),
             schedule.getRoom().getId(),
             schedule.getClassEntity().getId(),
-            schedule.getDayOfWeek(),
+            schedule.getDayOfWeek() != null ? schedule.getDayOfWeek().ordinal() : null,
             schedule.getTimeSlot().getId(),
             schedule.getStartDate(),
             schedule.getEndDate()
@@ -213,7 +211,7 @@ public class ScheduleServiceImpl implements IScheduleService {
     public Schedule confirmSchedule(Long scheduleId) {
         Schedule schedule = findById(scheduleId);
         if (schedule != null) {
-            schedule.setStatus(Schedule.ScheduleStatus.CONFIRMED);
+            schedule.setStatus(ScheduleStatus.CONFIRMED);
             return save(schedule);
         }
         return null;
@@ -223,7 +221,7 @@ public class ScheduleServiceImpl implements IScheduleService {
     public Schedule cancelSchedule(Long scheduleId) {
         Schedule schedule = findById(scheduleId);
         if (schedule != null) {
-            schedule.setStatus(Schedule.ScheduleStatus.CANCELLED);
+            schedule.setStatus(ScheduleStatus.CANCELLED);
             return save(schedule);
         }
         return null;
@@ -233,7 +231,7 @@ public class ScheduleServiceImpl implements IScheduleService {
     public Schedule completeSchedule(Long scheduleId) {
         Schedule schedule = findById(scheduleId);
         if (schedule != null) {
-            schedule.setStatus(Schedule.ScheduleStatus.COMPLETED);
+            schedule.setStatus(ScheduleStatus.COMPLETED);
             return save(schedule);
         }
         return null;
@@ -314,7 +312,7 @@ public class ScheduleServiceImpl implements IScheduleService {
         if (schedule.getTeacher() != null && schedule.getTimeSlot() != null) {
             boolean teacherConflict = hasTeacherConflict(
                 schedule.getTeacher().getId(),
-                schedule.getDayOfWeek(),
+                schedule.getDayOfWeek() != null ? schedule.getDayOfWeek().ordinal() : null,
                 schedule.getTimeSlot().getId(),
                 schedule.getStartDate(),
                 schedule.getEndDate()
@@ -327,7 +325,7 @@ public class ScheduleServiceImpl implements IScheduleService {
         if (schedule.getRoom() != null && schedule.getTimeSlot() != null) {
             boolean roomConflict = hasRoomConflict(
                 schedule.getRoom().getId(),
-                schedule.getDayOfWeek(),
+                schedule.getDayOfWeek() != null ? schedule.getDayOfWeek().ordinal() : null,
                 schedule.getTimeSlot().getId(),
                 schedule.getStartDate(),
                 schedule.getEndDate()
@@ -340,7 +338,7 @@ public class ScheduleServiceImpl implements IScheduleService {
         if (schedule.getClassEntity() != null && schedule.getTimeSlot() != null) {
             boolean classConflict = hasClassConflict(
                 schedule.getClassEntity().getId(),
-                schedule.getDayOfWeek(),
+                schedule.getDayOfWeek() != null ? schedule.getDayOfWeek().ordinal() : null,
                 schedule.getTimeSlot().getId(),
                 schedule.getStartDate(),
                 schedule.getEndDate()

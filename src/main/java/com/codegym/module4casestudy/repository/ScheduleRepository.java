@@ -1,6 +1,7 @@
 package com.codegym.module4casestudy.repository;
 
 import com.codegym.module4casestudy.model.Schedule;
+import com.codegym.module4casestudy.model.ScheduleStatus;
 import com.codegym.module4casestudy.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -115,7 +116,7 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
     
     // Tìm lịch theo trạng thái
     @Query("SELECT s FROM Schedule s WHERE s.status = :status AND s.active = true")
-    List<Schedule> findByStatus(@Param("status") Schedule.ScheduleStatus status);
+    List<Schedule> findByStatus(@Param("status") ScheduleStatus status);
     
     // Tìm lịch cho sinh viên (thông qua lớp họ đăng ký)
     @Query("SELECT DISTINCT s FROM Schedule s " +
@@ -172,6 +173,16 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
                                                @Param("timeSlotId") Long timeSlotId,
                                                @Param("startDate") LocalDate startDate,
                                                @Param("endDate") LocalDate endDate);
+
+
+    @Query("""
+       select s
+       from Schedule s
+       join fetch s.timeSlot ts
+       where s.active = true
+       order by s.dayOfWeek, ts.periodNumber
+       """)
+    List<Schedule> findAllActiveOrderByDowAndSlot();
 
 
 

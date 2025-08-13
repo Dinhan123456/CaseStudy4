@@ -173,7 +173,7 @@ public class StudentScheduleController {
 
             // Kiểm tra xung đột lịch học
             boolean hasConflict = scheduleService.hasStudentScheduleConflict(
-                student.getId(), schedule.getDayOfWeek(), schedule.getTimeSlot().getId(),
+                student.getId(), schedule.getDayOfWeek() != null ? schedule.getDayOfWeek().ordinal() : null, schedule.getTimeSlot().getId(),
                 schedule.getStartDate(), schedule.getEndDate());
 
             if (hasConflict) {

@@ -1,6 +1,7 @@
 package com.codegym.module4casestudy.service;
 
 import com.codegym.module4casestudy.model.Schedule;
+import com.codegym.module4casestudy.model.ScheduleStatus;
 import com.codegym.module4casestudy.model.User;
 import java.time.LocalDate;
 import java.util.List;
@@ -45,7 +46,7 @@ public interface IScheduleService {
     List<Schedule> findAllActiveSchedules();
     
     // Tìm lịch theo trạng thái
-    List<Schedule> findByStatus(Schedule.ScheduleStatus status);
+    List<Schedule> findByStatus(ScheduleStatus status);
     
     // Conflict checking methods - để đảm bảo unique constraints
     boolean hasTeacherConflict(Long teacherId, Integer dayOfWeek, Long timeSlotId, LocalDate startDate, LocalDate endDate);
