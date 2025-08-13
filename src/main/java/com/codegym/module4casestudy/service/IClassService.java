@@ -34,6 +34,9 @@ public interface IClassService {
     void addStudentToClass(Long classId, Long studentId) throws IllegalStateException;
     void removeStudentFromClass(Long classId, Long studentId);
 
+    // Thêm nhiều sinh viên vào lớp
+    void addStudentsToClass(Long classId, List<Long> studentIds);
+
     // Capacity checking methods
     boolean canAddStudentToClass(Long classId);
     int getAvailableSlots(Long classId);

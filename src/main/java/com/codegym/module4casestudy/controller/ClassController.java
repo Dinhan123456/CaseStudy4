@@ -124,22 +124,28 @@ public class ClassController {
     @GetMapping("/edit/{id}")
     public String showEditForm(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
         try {
-            Class classEntity = classService.findByIdWithStudentsAndTeachers(id);
-            if (classEntity == null) {
+            java.util.Optional<Class> classOpt = classService.findById(id);
+            if (!classOpt.isPresent()) {
                 redirectAttributes.addFlashAttribute("error", "Không tìm thấy lớp học!");
                 return "redirect:/classes";
             }
-
-            // Thêm dữ liệu cần thiết cho form chỉnh sửa - sử dụng findByIdWithStudentsAndTeachers để có đủ relationship data
+            Class classEntity = classOpt.get();
+            // Sử dụng findById thay vì findByIdWithStudentsAndTeachers để tránh lỗi relationship
             model.addAttribute("classEntity", classEntity);
-            model.addAttribute("allStudents", userService.findByRole(Role.STUDENT));
-            model.addAttribute("allTeachers", userService.findByRole(Role.TEACHER));
+            model.addAttribute("allStudents", userService.findByRole(com.codegym.module4casestudy.model.Role.STUDENT));
+            model.addAttribute("allTeachers", userService.findByRole(com.codegym.module4casestudy.model.Role.TEACHER));
             model.addAttribute("allSubjects", subjectService.findAll());
-            model.addAttribute("classSubjects", classService.getClassSubjects(id));
-
+            // Lấy class subjects riêng để tránh lỗi
+            try {
+                model.addAttribute("classSubjects", classService.getClassSubjects(id));
+            } catch (Exception e) {
+                model.addAttribute("classSubjects", new java.util.ArrayList<>());
+                System.out.println("Warning: Could not load class subjects: " + e.getMessage());
+            }
             return "admin/admin-class-form";
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", "Có lỗi xảy ra: " + e.getMessage());
+            e.printStackTrace(); // Log full stack trace for debugging
+            redirectAttributes.addFlashAttribute("error", "Có lỗi xảy ra khi tải thông tin lớp học: " + e.getMessage());
             return "redirect:/classes";
         }
     }
@@ -221,6 +227,16 @@ public class ClassController {
         } catch (Exception e) {
             return "error";
         }
+    }
+
+    // Xử lý submit form thêm nhiều sinh viên vào lớp
+    @PostMapping("/{id}/students")
+    public String addStudentsForm(@PathVariable Long id,
+                                  @RequestParam("studentIds") List<Long> studentIds,
+                                  RedirectAttributes ra) {
+        classService.addStudentsToClass(id, studentIds);
+        ra.addFlashAttribute("msgSuccess","Thêm sinh viên vào lớp thành công!");
+        return "redirect:/classes/edit/" + id;
     }
 
     @PostMapping("/{classId}/students/{studentId}/remove")

@@ -108,6 +108,7 @@ public class SecurityConfig {
             .csrf()
                 .csrfTokenRepository(org.springframework.security.web.csrf.CookieCsrfTokenRepository.withHttpOnlyFalse())
                 .ignoringAntMatchers("/api/**") // Ignore CSRF for API endpoints if needed
+
             .and()
             // Additional security headers
             .headers()

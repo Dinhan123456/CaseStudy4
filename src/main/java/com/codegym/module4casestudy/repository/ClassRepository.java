@@ -2,6 +2,7 @@ package com.codegym.module4casestudy.repository;
 
 import com.codegym.module4casestudy.model.Class;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -68,5 +69,16 @@ public interface ClassRepository extends JpaRepository<Class, Long> {
        ORDER BY c.id DESC
     """)
     List<Class> findByStudentId(@Param("studentId") Long studentId);
+
+    // Helper methods to avoid relationship issues
+    @Query(value = "SELECT COUNT(*) FROM student_class WHERE class_id = :classId", nativeQuery = true)
+    int countStudentsInClass(@Param("classId") Long classId);
+
+    @Query(value = "SELECT CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END FROM student_class WHERE class_id = :classId AND student_id = :studentId", nativeQuery = true)
+    int isStudentInClassNative(@Param("classId") Long classId, @Param("studentId") Long studentId);
+
+    @Modifying
+    @Query(value = "INSERT INTO student_class (class_id, student_id) VALUES (:classId, :studentId)", nativeQuery = true)
+    void addStudentToClassDirect(@Param("classId") Long classId, @Param("studentId") Long studentId);
 
 }

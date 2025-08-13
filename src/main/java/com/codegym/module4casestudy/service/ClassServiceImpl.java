@@ -1,6 +1,7 @@
 package com.codegym.module4casestudy.service;
 
 import com.codegym.module4casestudy.model.Class;
+import com.codegym.module4casestudy.model.Role;
 import com.codegym.module4casestudy.model.ClassSubject;
 import com.codegym.module4casestudy.model.Schedule;
 import com.codegym.module4casestudy.model.Subject;
@@ -138,6 +139,7 @@ public class ClassServiceImpl implements IClassService {
     }
 
     @Override
+    @Transactional
     public void addStudentToClass(Long classId, Long studentId) throws IllegalStateException {
         Class classEntity = classRepository.findById(classId).orElse(null);
         User student = userRepository.findById(studentId).orElse(null);
@@ -148,32 +150,58 @@ public class ClassServiceImpl implements IClassService {
         if (student == null) {
             throw new IllegalStateException("Không tìm thấy sinh viên với ID: " + studentId);
         }
-
-        // Kiểm tra capacity trước khi thêm
-        if (!canAddStudentToClass(classId)) {
-            throw new IllegalStateException("Lớp học đã đầy! Sức chứa: " + classEntity.getCapacity() + 
-                " sinh viên. Hiện tại có: " + classEntity.getCurrentStudentCount() + " sinh viên.");
+        if (!student.getRole().equals(Role.STUDENT)) {
+            throw new IllegalStateException("User không phải là sinh viên!");
         }
 
-        // Kiểm tra sinh viên đã trong lớp chưa
-        if (classEntity.getStudents().contains(student)) {
+        // Kiểm tra capacity bằng cách đếm trực tiếp từ database thay vì dùng relationship
+        int currentStudentCount = getCurrentStudentCount(classId);
+        if (currentStudentCount >= classEntity.getCapacity()) {
+            throw new IllegalStateException("Lớp học đã đầy! Sức chứa: " + classEntity.getCapacity() + 
+                " sinh viên. Hiện tại có: " + currentStudentCount + " sinh viên.");
+        }
+
+        // Kiểm tra sinh viên đã trong lớp chưa bằng cách query trực tiếp
+        if (isStudentInClass(classId, studentId)) {
             throw new IllegalStateException("Sinh viên đã có trong lớp học này!");
         }
 
-        classEntity.getStudents().add(student);
-        classRepository.save(classEntity);
+        // Thêm sinh viên vào lớp bằng cách insert trực tiếp vào bảng student_class
+        classRepository.addStudentToClassDirect(classId, studentId);
+    }
+
+    @Override
+    public void addStudentsToClass(Long classId, List<Long> studentIds) {
+        for (Long studentId : studentIds) {
+            addStudentToClass(classId, studentId);
+        }
     }
 
     @Override
     public boolean canAddStudentToClass(Long classId) {
         Class classEntity = classRepository.findById(classId).orElse(null);
-        return classEntity != null && classEntity.canAddStudent();
+        if (classEntity == null) return false;
+        
+        int currentStudentCount = getCurrentStudentCount(classId);
+        return currentStudentCount < classEntity.getCapacity();
     }
 
     @Override
     public int getAvailableSlots(Long classId) {
         Class classEntity = classRepository.findById(classId).orElse(null);
-        return classEntity != null ? classEntity.getAvailableSlots() : 0;
+        if (classEntity == null) return 0;
+        
+        int currentStudentCount = getCurrentStudentCount(classId);
+        return classEntity.getCapacity() - currentStudentCount;
+    }
+
+    // Helper methods để tránh sử dụng relationship có vấn đề
+    private int getCurrentStudentCount(Long classId) {
+        return classRepository.countStudentsInClass(classId);
+    }
+
+    private boolean isStudentInClass(Long classId, Long studentId) {
+        return classRepository.isStudentInClassNative(classId, studentId) > 0;
     }
 
     @Override
