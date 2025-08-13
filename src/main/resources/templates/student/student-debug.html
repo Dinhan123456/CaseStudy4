@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Debug - CaseStudy4</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .debug-container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .debug-header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+        .debug-info {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .debug-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .debug-item:last-child {
+            border-bottom: none;
+        }
+        .debug-label {
+            font-weight: 600;
+            color: #495057;
+        }
+        .debug-value {
+            color: #6c757d;
+        }
+        .back-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 25px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: transform 0.3s;
+        }
+        .back-btn:hover {
+            transform: translateY(-2px);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="debug-container">
+            <div class="debug-header">
+                <h1><i class="fas fa-bug me-3"></i>Student Debug Information</h1>
+                <p class="text-muted">Authentication and session debug data</p>
+            </div>
+
+            <div class="debug-info">
+                <h4 class="mb-3"><i class="fas fa-user me-2"></i>Authentication Details</h4>
+                <div class="debug-item">
+                    <span class="debug-label">Authentication Object:</span>
+                    <span class="debug-value" th:text="${auth}">null</span>
+                </div>
+                <div class="debug-item">
+                    <span class="debug-label">Auth Name:</span>
+                    <span class="debug-value" th:text="${authName}">null</span>
+                </div>
+                <div class="debug-item">
+                    <span class="debug-label">Auth Details:</span>
+                    <span class="debug-value" th:text="${authDetails}">null</span>
+                </div>
+                <div class="debug-item">
+                    <span class="debug-label">Auth Authorities:</span>
+                    <span class="debug-value" th:text="${authAuthorities}">null</span>
+                </div>
+            </div>
+
+            <div class="debug-info">
+                <h4 class="mb-3"><i class="fas fa-user-graduate me-2"></i>Student Information</h4>
+                <div class="debug-item" th:if="${student}">
+                    <span class="debug-label">Student ID:</span>
+                    <span class="debug-value" th:text="${student.id}">-</span>
+                </div>
+                <div class="debug-item" th:if="${student}">
+                    <span class="debug-label">Username:</span>
+                    <span class="debug-value" th:text="${student.username}">-</span>
+                </div>
+                <div class="debug-item" th:if="${student}">
+                    <span class="debug-label">Full Name:</span>
+                    <span class="debug-value" th:text="${student.fullName}">-</span>
+                </div>
+                <div class="debug-item" th:if="${student}">
+                    <span class="debug-label">Email:</span>
+                    <span class="debug-value" th:text="${student.email}">-</span>
+                </div>
+                <div class="debug-item" th:if="${student}">
+                    <span class="debug-label">Phone:</span>
+                    <span class="debug-value" th:text="${student.phone}">-</span>
+                </div>
+                <div class="debug-item" th:if="${student}">
+                    <span class="debug-label">Role:</span>
+                    <span class="debug-value" th:text="${student.role}">-</span>
+                </div>
+                <div class="debug-item" th:unless="${student}">
+                    <span class="debug-label text-danger">Student:</span>
+                    <span class="debug-value text-danger">Not found or not authenticated</span>
+                </div>
+            </div>
+
+            <div class="debug-info">
+                <h4 class="mb-3"><i class="fas fa-clock me-2"></i>System Information</h4>
+                <div class="debug-item">
+                    <span class="debug-label">Current Time:</span>
+                    <span class="debug-value" th:text="${#temporals.format(#temporals.createNow(), 'dd/MM/yyyy HH:mm:ss')}">-</span>
+                </div>
+                <div class="debug-item">
+                    <span class="debug-label">Session Active:</span>
+                    <span class="debug-value" th:text="${auth != null ? 'Yes' : 'No'}">-</span>
+                </div>
+            </div>
+
+            <div class="text-center mt-4">
+                <a th:href="@{/student/dashboard}" class="back-btn">
+                    <i class="fas fa-arrow-left"></i>
+                    Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

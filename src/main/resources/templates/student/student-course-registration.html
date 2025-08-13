@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <title>Đăng Ký Môn Học</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root{
+            --bg:#f7f8fb;            /* nền tổng thể nhẹ mắt */
+            --card:#ffffff;          /* nền thẻ */
+            --line:#e9edf3;          /* viền nhạt */
+            --text:#111;             /* màu chữ chính */
+            --muted:#6b7280;         /* chữ mô tả */
+            --shadow:0 6px 18px rgba(17,24,39,0.06);
+            --radius:14px;
+            --gap:22px;
+        }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background: #f9f9f9;
+        }
+
+        .wrapper {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background: #ffffff;
+            color: #111;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            z-index: 1000;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .menu-toggle {
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        /* User Info */
+        .user-info {
+            position: relative;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .user-info i {
+            font-size: 18px;
+            color: #333;
+        }
+
+        /* Logout Dropdown */
+        .logout-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+            min-width: 120px;
+            margin-top: 5px;
+        }
+
+        .logout-dropdown button {
+            border: none;
+            background: none;
+            width: 100%;
+            padding: 8px 12px;
+            text-align: left;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .logout-dropdown button:hover {
+            background-color: #f8f9fa;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: #111;
+            color: white;
+            width: 240px;
+            height: 100vh;
+            padding: 90px 20px 30px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            overflow-y: auto;
+            z-index: 999;
+            display: none;
+        }
+
+        .sidebar.show {
+            display: block;
+        }
+
+        .sidebar h4 {
+            font-size: 16px;
+            margin-bottom: 24px;
+            color: #bbb;
+            letter-spacing: 0.5px;
+            /*text-transform: uppercase;*/
+        }
+
+        .sidebar a {
+            display: block;
+            color: white;
+            text-decoration: none;
+            margin-bottom: 14px;
+            font-size: 15px;
+            padding: 10px 16px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .sidebar a:hover {
+            background-color: #f1f1f1;
+            color: #111;
+            transform: translateX(4px);
+        }
+
+        /* Main content */
+        .main-content {
+            flex-grow:1;
+            padding:80px 0 40px;
+            background:var(--bg);
+            transition:margin-left .3s ease;
+        }
+        .sidebar.show ~ .main-content { margin-left:240px; }
+
+        /* Footer căn chỉnh theo sidebar */
+        /*footer {*/
+        /*    background:#fff;*/
+        /*    color:#6b7280;*/
+        /*    text-align:center;*/
+        /*    padding:12px 20px;*/
+        /*    font-size:13px;*/
+        /*    border-top:1px solid var(--line);*/
+        /*    margin-top:auto;*/
+        /*    transition: margin-left .3s ease;*/
+        /*    margin-left: 0; !* mặc định khớp main khi sidebar ẩn *!*/
+        /*}*/
+
+        /* ==== Footer ==== */
+        footer {
+            background: #fff;
+            color: #888;
+            text-align: center;
+            padding: 12px 20px;
+            font-size: 13px;
+            border-top: 1px solid #e0e0e0;
+            margin-top: auto;
+        }
+        /*.sidebar.show ~ footer { margin-left:240px; }*/
+
+        /* ==== Main Content ==== */
+        .main-content {
+            margin-left: 0;
+            padding: 100px 40px 40px;
+            flex-grow: 1;
+            background: #f9f9f9;
+            transition: margin-left 0.3s ease;
+        }
+
+        .sidebar.show ~ .main-content {
+            margin-left: 240px;
+        }
+
+        .main-content h2 {
+            margin-bottom: 30px;
+            color: #111;
+        }
+
+
+        /* Lớp bọc để CĂN GIỮA và GIỚI HẠN CHIỀU RỘNG */
+        .content-wrap { max-width:1200px; margin:0 auto; padding:0 16px 32px; box-sizing:border-box; }
+
+        /* Thanh navbar bên trong main (rộng bằng content-wrap) */
+        .inner-navbar { border-radius:12px; overflow:hidden; box-shadow:var(--shadow); }
+
+        /* Khối section dạng card lớn để gom nội dung */
+        .section-card { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); padding:22px; }
+        .section-card + .section-card { margin-top:var(--gap); }
+
+        /* Panel tiêu đề */
+        .registration-panel h2 { font-size:22px; margin:0 0 6px; display:flex; align-items:center; gap:10px; }
+        .registration-panel p { color:var(--muted); margin:0; }
+
+        /* Bộ lọc */
+        .filter-panel .form-label { font-weight:600; font-size:14px; }
+        .filter-panel .form-select { border-radius:10px; }
+
+        /* Card khóa học */
+        .course-card { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; display:flex; flex-direction:column; height:100%; }
+        .course-header { background:linear-gradient(135deg,#111827,#1f2937); color:#fff; padding:18px 18px 16px; position:relative; }
+        .course-header h5 { font-size:16px; margin:0 0 4px; }
+        .course-header h6 { font-size:14px; margin:0; opacity:.92; font-weight:500; }
+        .course-status { position:absolute; right:14px; top:14px; padding:6px 10px; font-size:12px; border-radius:999px; background:#10b981; color:#fff; }
+        .status-registered { background:#ef4444 !important; }
+
+        .card-body { padding:16px 18px 18px; display:flex; flex-direction:column; gap:12px; flex:1; }
+        .schedule-info .row > [class^="col-"] { font-size:14px; color:#111; }
+        .conflict-warning { background:#fff7ed; color:#c2410c; border:1px solid #fed7aa; border-radius:10px; padding:10px 12px; margin-top:6px; }
+
+        /* Nút hành động */
+        .btn-register { background:#111827; color:#fff; border:none; padding:10px 14px; border-radius:10px; }
+        .btn-register:hover { filter:brightness(1.08); }
+        .btn-unregister { background:#ef4444; color:#fff; border:none; padding:10px 14px; border-radius:10px; }
+
+        /* Responsive */
+        @media (min-width: 769px) {
+            .sidebar.show ~ .main-content + footer {
+                margin-left: 240px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 100px 20px 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+<header>
+    <div class="menu-toggle" onclick="toggleSidebar()">
+        <i class="fas fa-bars"></i>
+    </div>
+    <div class="user-info">
+        <i class="fas fa-user me-2" onclick="toggleLogoutDropdown()"></i>
+
+        <div id="logoutDropdown" class="logout-dropdown">
+            <form th:action="@{/logout}" method="post">
+                <button type="submit" class="btn btn-sm btn-outline-danger w-100">Logout</button>
+            </form>
+        </div>
+    </div>
+</header>
+
+<!-- Sidebar -->
+<div class="sidebar" id="sidebar">
+    <a th:href="@{/teacher/dashboard}" class="active">
+        <i class="bi bi-house-door-fill"></i>Trang chủ
+    </a>
+    <a th:href="@{/teacher/profile}"><i class="fas fa-user-cog me-2"></i>Tài khoản cá nhân</a>
+    <a th:href="@{/teacher/classes}"><i class="fas fa-chalkboard-teacher me-2"></i>Lớp đang dạy</a>
+    <a th:href="@{/teacher/grades}"><i class="fas fa-clipboard me-2"></i>Quản lý điểm</a>
+    <a th:href="@{/teacher/schedule}"><i class="fas fa-calendar-alt me-2"></i>Lịch dạy</a>
+</div>
+
+<div class="main-content">
+    <div class="container">
+        <h2>Hệ Thống Quản Lý Sinh Viên</h2>
+
+
+    </div>
+    <div class="container-fluid mt-4">
+        <div class="registration-panel">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h2><i class="fas fa-plus-circle me-3"></i>Đăng Ký Môn Học</h2>
+                    <p class="mb-0">Chọn và đăng ký các môn học phù hợp với lịch trình của bạn</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="d-flex gap-2 justify-content-end">
+                        <a href="/student/schedule" class="btn btn-light">
+                            <i class="fas fa-arrow-left me-2"></i>Quay lại
+                        </a>
+                        <button class="btn btn-outline-light" onclick="refreshPage()">
+                            <i class="fas fa-sync-alt me-2"></i>Làm mới
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bộ lọc -->
+        <div class="filter-panel">
+            <form method="get" th:action="@{/student/course-registration}">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label for="subjectFilter" class="form-label">Môn Học</label>
+                        <select class="form-select" id="subjectFilter" name="subjectId">
+                            <option value="">Tất cả môn học</option>
+                            <option th:each="subject : ${subjects}"
+                                    th:value="${subject.id}"
+                                    th:text="${subject.subjectCode + ' - ' + subject.subjectName}"
+                                    th:selected="${param.subjectId == subject.id}">
+                                MATH101 - Toán học
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="dayFilter" class="form-label">Thứ</label>
+                        <select class="form-select" id="dayFilter" name="dayOfWeek">
+                            <option value="">Tất cả</option>
+                            <option value="2" th:selected="${param.dayOfWeek == '2'}">Thứ Hai</option>
+                            <option value="3" th:selected="${param.dayOfWeek == '3'}">Thứ Ba</option>
+                            <option value="4" th:selected="${param.dayOfWeek == '4'}">Thứ Tư</option>
+                            <option value="5" th:selected="${param.dayOfWeek == '5'}">Thứ Năm</option>
+                            <option value="6" th:selected="${param.dayOfWeek == '6'}">Thứ Sáu</option>
+                            <option value="7" th:selected="${param.dayOfWeek == '7'}">Thứ Bảy</option>
+                            <option value="8" th:selected="${param.dayOfWeek == '8'}">Chủ Nhật</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="statusFilter" class="form-label">Trạng Thái</label>
+                        <select class="form-select" id="statusFilter" name="status">
+                            <option value="">Tất cả</option>
+                            <option value="available" th:selected="${param.status == 'available'}">Có thể đăng ký</option>
+                            <option value="registered" th:selected="${param.status == 'registered'}">Đã đăng ký</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-filter me-2"></i>Lọc
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Danh sách khóa học -->
+        <div class="row">
+            <div th:each="schedule : ${availableSchedules}" class="col-md-6 col-lg-4">
+                <div class="course-card">
+                    <div class="course-header position-relative">
+                        <div class="course-status"
+                             th:classappend="${schedule.registered} ? 'status-registered' : 'status-available'"
+                             th:text="${schedule.registered} ? 'Đã đăng ký' : 'Có thể đăng ký'">
+                            Có thể đăng ký
+                        </div>
+                        <h5 class="mb-1" th:text="${schedule.subject.subjectCode}">MATH101</h5>
+                        <h6 th:text="${schedule.subject.subjectName}">Toán học cơ bản</h6>
+                    </div>
+
+                    <div class="card-body">
+                        <div class="schedule-info">
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <i class="fas fa-calendar text-primary me-2"></i>
+                                    <strong>Thứ</strong> <span th:text="${schedule.dayOfWeek}">2</span>
+                                </div>
+                                <div class="col-6">
+                                    <i class="fas fa-clock text-success me-2"></i>
+                                    <span th:text="${schedule.timeSlot.startTime + '-' + schedule.timeSlot.endTime}">07:30-09:00</span>
+                                </div>
+                                <div class="col-6">
+                                    <i class="fas fa-door-open text-info me-2"></i>
+                                    <span th:text="${schedule.room.roomName}">A101</span>
+                                </div>
+                                <div class="col-6">
+                                    <i class="fas fa-user text-warning me-2"></i>
+                                    <span th:text="${schedule.teacher.fullName}">Nguyễn Văn A</span>
+                                </div>
+                                <div class="col-6" th:if="${schedule.classEntity}">
+                                    <i class="fas fa-users text-secondary me-2"></i>
+                                    <span th:text="${schedule.classEntity.currentStudentCount + '/' + schedule.classEntity.capacity}">20/30</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <small class="text-muted">
+                                    Từ <span th:text="${#temporals.format(schedule.startDate, 'dd/MM/yyyy')}">01/03/2024</span>
+                                    <span th:if="${schedule.endDate}">
+                                        đến <span th:text="${#temporals.format(schedule.endDate, 'dd/MM/yyyy')}">31/05/2024</span>
+                                    </span>
+                                </small>
+                            </div>
+                            <div>
+                                <span class="badge bg-secondary" th:text="${schedule.subject.credits + ' tín chỉ'}">3 tín chỉ</span>
+                            </div>
+                        </div>
+
+                        <!-- Cảnh báo xung đột nếu có -->
+                        <div th:if="${schedule.hasConflict}" class="conflict-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Cảnh báo:</strong> Có xung đột thời gian với lịch học hiện tại
+                        </div>
+
+                        <!-- Cảnh báo lớp gần đầy -->
+                        <div th:if="${schedule.classEntity and schedule.classEntity.availableSlots <= 5 and schedule.classEntity.availableSlots > 0}"
+                             class="alert alert-warning py-2">
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                            <strong>Chỉ còn lại <span th:text="${schedule.classEntity.availableSlots}">3</span> chỗ!</strong>
+                        </div>
+
+                        <!-- Cảnh báo lớp đã đầy -->
+                        <div th:if="${schedule.classEntity and schedule.classEntity.full}"
+                             class="alert alert-danger py-2">
+                            <i class="fas fa-times-circle me-2"></i>
+                            <strong>Lớp đã đầy!</strong>
+                        </div>
+
+                        <div class="mt-3 d-grid">
+                            <button th:if="${!schedule.registered and !schedule.hasConflict and (!schedule.classEntity or !schedule.classEntity.full)}"
+                                    class="btn btn-register"
+                                    th:onclick="'registerCourse(' + ${schedule.id} + ')'">
+                                <i class="fas fa-plus-circle me-2"></i>Đăng Ký
+                            </button>
+                            <button th:if="${!schedule.registered and (schedule.hasConflict or (schedule.classEntity and schedule.classEntity.full))}"
+                                    class="btn btn-secondary" disabled>
+                                <i class="fas fa-ban me-2"></i>
+                                <span th:text="${schedule.hasConflict ? 'Xung đột thời gian' : 'Lớp đã đầy'}">Không thể đăng ký</span>
+                            </button>
+                            <button th:if="${schedule.registered}"
+                                    class="btn btn-unregister"
+                                    th:onclick="'unregisterCourse(' + ${schedule.id} + ')'">
+                                <i class="fas fa-minus-circle me-2"></i>Hủy Đăng Ký
+                            </button>
+                            <button th:if="${!schedule.registered and schedule.hasConflict}"
+                                    class="btn btn-secondary" disabled>
+                                <i class="fas fa-ban me-2"></i>Có xung đột
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Message nếu không có khóa học -->
+        <div th:if="${#lists.isEmpty(availableSchedules)}" class="text-center py-5">
+            <i class="fas fa-search fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">Không tìm thấy khóa học phù hợp</h5>
+            <p class="text-muted">Thử thay đổi điều kiện lọc để xem thêm khóa học khác</p>
+            <a href="/student/course-registration" class="btn btn-primary">
+                <i class="fas fa-redo me-2"></i>Xem tất cả khóa học
+            </a>
+        </div>
+    </div>
+
+    <!-- Modal xác nhận -->
+    <div class="modal fade" id="confirmModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmModalTitle">Xác nhận đăng ký</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="confirmModalBody">
+                    Bạn có chắc chắn muốn đăng ký khóa học này?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-primary" id="confirmButton">Xác nhận</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast thông báo -->
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999;">
+        <div id="notificationToast" class="toast" role="alert">
+            <div class="toast-header">
+                <i class="fas fa-bell text-primary me-2"></i>
+                <strong class="me-auto">Thông báo</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body" id="toastMessage">
+                Thông báo sẽ hiển thị ở đây
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<footer>
+    © 2025 Hệ thống Quản lý Giảng dạy. All rights reserved.
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    let currentScheduleId = null;
+    let currentAction = null;
+
+    function registerCourse(scheduleId) {
+        currentScheduleId = scheduleId;
+        currentAction = 'register';
+
+        document.getElementById('confirmModalTitle').textContent = 'Xác nhận đăng ký';
+        document.getElementById('confirmModalBody').textContent = 'Bạn có chắc chắn muốn đăng ký khóa học này?';
+        document.getElementById('confirmButton').textContent = 'Đăng ký';
+        document.getElementById('confirmButton').className = 'btn btn-success';
+
+        new bootstrap.Modal(document.getElementById('confirmModal')).show();
+    }
+
+    function unregisterCourse(scheduleId) {
+        currentScheduleId = scheduleId;
+        currentAction = 'unregister';
+
+        document.getElementById('confirmModalTitle').textContent = 'Xác nhận hủy đăng ký';
+        document.getElementById('confirmModalBody').textContent = 'Bạn có chắc chắn muốn hủy đăng ký khóa học này?';
+        document.getElementById('confirmButton').textContent = 'Hủy đăng ký';
+        document.getElementById('confirmButton').className = 'btn btn-danger';
+
+        new bootstrap.Modal(document.getElementById('confirmModal')).show();
+    }
+
+    document.getElementById('confirmButton').addEventListener('click', function() {
+        if (currentScheduleId && currentAction) {
+            const url = currentAction === 'register' ? '/student/api/classes/' + currentScheduleId + '/register' : '/student/api/classes/' + currentScheduleId + '/unregister';
+
+            // Get CSRF token
+            const csrfToken = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
+            const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content');
+
+            const headers = {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest'
+            };
+
+            if (csrfToken && csrfHeader) {
+                headers[csrfHeader] = csrfToken;
+            }
+
+            fetch(url, {
+                method: 'POST',
+                headers: headers,
+                body: ''
+            })
+                .then(response => response.json())
+                .then(data => {
+                    bootstrap.Modal.getInstance(document.getElementById('confirmModal')).hide();
+                    showToast(data.message, data.success ? 'success' : 'error');
+
+                    if (data.success) {
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    bootstrap.Modal.getInstance(document.getElementById('confirmModal')).hide();
+                    showToast('Có lỗi xảy ra khi xử lý yêu cầu', 'error');
+                });
+        }
+    });
+
+    function showToast(message, type = 'info') {
+        const toast = document.getElementById('notificationToast');
+        const toastMessage = document.getElementById('toastMessage');
+        const toastHeader = toast.querySelector('.toast-header');
+
+        toastMessage.textContent = message;
+
+        // Reset classes
+        toast.className = 'toast';
+        toastHeader.className = 'toast-header';
+
+        // Add appropriate classes based on type
+        if (type === 'success') {
+            toast.classList.add('text-bg-success');
+        } else if (type === 'error') {
+            toast.classList.add('text-bg-danger');
+        } else if (type === 'warning') {
+            toast.classList.add('text-bg-warning');
+        } else {
+            toast.classList.add('text-bg-info');
+        }
+
+        new bootstrap.Toast(toast).show();
+    }
+
+    function refreshPage() {
+        window.location.reload();
+    }
+
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    function toggleLogoutDropdown() {
+        const dropdown = document.getElementById("logoutDropdown");
+        if (dropdown) {
+            dropdown.style.display = (dropdown.style.display === "block") ? "none" : "block";
+        }
+    }
+
+    function toggleSidebar() {
+        const sidebar = document.getElementById("sidebar");
+        if (sidebar) {
+            sidebar.classList.toggle("show");
+        }
+    }
+
+    document.addEventListener("click", function (event) {
+        const userInfo = document.querySelector(".user-info");
+        const dropdown = document.getElementById("logoutDropdown");
+        const sidebar = document.getElementById("sidebar");
+        const toggle = document.querySelector(".menu-toggle");
+
+        if (dropdown && userInfo && !userInfo.contains(event.target)) {
+            dropdown.style.display = "none";
+        }
+
+        if (sidebar && !sidebar.contains(event.target) && !toggle.contains(event.target)) {
+            sidebar.classList.remove("show");
+        }
+    });
+
+    // ==== TEST CASES (ẩn) để kiểm tra căn chỉnh footer theo sidebar ====
+    (function(){
+        const params = new URLSearchParams(location.search);
+        if(params.get('test') === '1'){
+            console.group('FOOTER & SIDEBAR TESTS');
+            const sidebar = document.getElementById('sidebar');
+            const footer = document.querySelector('footer');
+            const getML = () => window.getComputedStyle(footer).marginLeft;
+            const before = getML();
+            toggleSidebar();
+            const afterOpen = getML();
+            console.assert(afterOpen !== before, 'Footer margin-left should change when sidebar opens');
+            toggleSidebar();
+            const afterClose = getML();
+            console.assert(afterClose === before, 'Footer margin-left should revert when sidebar closes');
+            console.groupEnd();
+        }
+    })();
+</script>
+</body>
+</html>

@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý lớp học</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Inline CSS để tránh 404 -->
+    <style>
+        /* ==== Global Reset and Base Styling ==== */
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background: #f9f9f9;
+        }
+
+        .wrapper {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ==== Header ==== */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background: #fff;
+            color: #111;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            z-index: 1000;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .menu-toggle {
+            cursor: pointer !important;
+            font-size: 18px !important;
+            padding: 8px !important;
+            border-radius: 4px !important;
+            transition: all 0.2s ease !important;
+            z-index: 1001 !important;
+            position: relative !important;
+        }
+
+        .menu-toggle:hover {
+            background-color: #f0f0f0 !important;
+        }
+
+        .menu-toggle i {
+            pointer-events: none !important;
+        }
+
+        /* User Info */
+        .user-info {
+            position: relative;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .user-info i {
+            font-size: 18px;
+            color: #333;
+        }
+
+        /* Logout Dropdown */
+        .logout-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+            min-width: 120px;
+            margin-top: 5px;
+        }
+
+        .logout-dropdown button {
+            border: none;
+            background: none;
+            width: 100%;
+            padding: 8px 12px;
+            text-align: left;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .logout-dropdown button:hover {
+            background-color: #f8f9fa;
+        }
+
+        /* ==== Sidebar ==== */
+        .student-sidebar {
+            background: #111 !important;
+            color: white !important;
+            width: 240px !important;
+            height: 100vh !important;
+            padding: 90px 20px 30px !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            overflow-y: auto !important;
+            z-index: 999 !important;
+            display: none !important;
+            transition: all 0.3s ease !important;
+        }
+
+        .student-sidebar.show {
+            display: block !important;
+        }
+
+        .student-sidebar h4 {
+            font-size: 16px !important;
+            margin-bottom: 24px !important;
+            color: #bbb !important;
+            letter-spacing: 0.5px !important;
+        }
+
+        .student-sidebar a {
+            display: block !important;
+            color: white !important;
+            text-decoration: none !important;
+            margin-bottom: 12px !important;
+            font-size: 15px !important;
+            padding: 10px 16px !important;
+            border-radius: 8px !important;
+            transition: all 0.2s ease !important;
+        }
+
+        .student-sidebar a:hover {
+            background-color: #f1f1f1 !important;
+            color: #111;
+            transform: translateX(4px);
+        }
+
+        /* ==== Main Content ==== */
+        .main-content {
+            margin-left: 0 !important;
+            padding: 100px 40px 40px !important;
+            flex-grow: 1 !important;
+            background: #f9f9f9 !important;
+            transition: margin-left 0.3s ease !important;
+        }
+
+        .student-sidebar.show ~ .main-content {
+            margin-left: 240px !important;
+        }
+
+        .main-content h2 {
+            margin-bottom: 30px;
+            color: #111;
+        }
+
+        /* Grid */
+
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 24px;
+        }
+
+
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.04);
+            border: 1px solid #e5e5e5;
+            transition: all 0.2s ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 6px 14px rgba(0,0,0,0.08);
+            transform: translateY(-4px);
+        }
+
+        .card h5 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #111;
+            margin-bottom: 8px;
+        }
+
+        .card p {
+            font-size: 14px;
+            color: #555;
+        }
+
+        /* ===== ADDITIONAL CARD STYLES ===== */
+        .hover-card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+
+        .hover-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+        }
+
+        .feature-icon {
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .border-left-primary {
+            border-left: 4px solid #007bff !important;
+        }
+
+        /* ==== Footer ==== */
+        footer {
+            background: #fff;
+            color: #888;
+            text-align: center;
+            padding: 12px 20px;
+            font-size: 13px;
+            border-top: 1px solid #e0e0e0;
+            margin-top: auto;
+        }
+
+        @media (min-width: 769px) {
+            .sidebar.show ~ .main-content + footer {
+                margin-left: 240px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 100px 20px 40px;
+            }
+        }
+
+    </style>
+
+    <!-- JavaScript functions -->
+    <script>
+        function toggleLogoutDropdown() {
+            const dropdown = document.getElementById("logoutDropdown");
+            if (dropdown) {
+                dropdown.style.display = (dropdown.style.display === "block") ? "none" : "block";
+            }
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.querySelector(".student-sidebar");
+            if (sidebar) {
+                sidebar.classList.toggle("show");
+            }
+        }
+    </script>
+</head>
+
+<body>
+<div class="wrapper">
+    <header>
+        <div class="menu-toggle" onclick="toggleSidebar()">
+            <i class="fas fa-bars" style="cursor: pointer;"></i>
+        </div>
+        <div class="user-info">
+            <i class="fas fa-user me-2" onclick="toggleLogoutDropdown()"></i>
+
+            <div id="logoutDropdown" class="logout-dropdown">
+                <form th:action="@{/logout}" method="post">
+                    <button type="submit" class="btn btn-sm btn-outline-danger w-100">Logout</button>
+                </form>
+            </div>
+        </div>
+    </header>
+
+    <div class="sidebar" id="sidebar">
+        <a th:href="@{/admin/panel}" class="sidebar-link home-link">
+            <i class="bi bi-house-door-fill"></i>Trang chủ
+        </a>
+        <a th:href="@{/admin/info}"><i class="fas fa-user me-2"></i>Tài khoản</a>
+        <a th:href="@{/subjects}"><i class="fas fa-book me-2"></i>Môn học</a>
+        <a th:href="@{/classes}"><i class="fas fa-chalkboard me-2"></i>Lớp học</a>
+        <a th:href="@{/admin/grades}"><i class="fas fa-id-badge me-2"></i>Điểm số</a>
+        <a th:href="@{/admin/schedules}" class="sidebar-link active"><i class="fas fa-calendar-alt me-2"></i>Lịch học</a>
+        <a th:href="@{/admin/registrations}" class="sidebar-link active"><i class="fas fa-user-plus me-2"></i>Đăng ký</a>
+    </div>
+
+    <div class="main-content">
+        <div class="container">
+            <h2 class="mb-4 text-center" th:text="${classEntity.id == null ? 'Thêm lớp học mới' : 'Chỉnh sửa lớp học'}">Quản lý lớp học</h2>
+
+            <!-- Hiển thị thông báo -->
+            <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
+                <span th:text="${message}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                <span th:text="${error}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <!-- Form thông tin cơ bản lớp học -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle me-2"></i>Thông tin cơ bản</h5>
+                </div>
+                <div class="card-body">
+                    <form th:object="${classEntity}" th:action="${classEntity.id == null ? '/classes/new' : '/classes/edit/' + classEntity.id}" method="post">
+                        <input type="hidden" th:field="*{id}">
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">Tên lớp học <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="name" th:field="*{name}" required
+                                           minlength="2" maxlength="100" pattern="[A-Za-z0-9\s\-_]+"
+                                           title="Tên lớp học chỉ được chứa chữ cái, số, dấu cách, gạch ngang và gạch dưới">
+                                    <div class="invalid-feedback">
+                                        Vui lòng nhập tên lớp học hợp lệ (2-100 ký tự)
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="active" class="form-label">Trạng thái</label>
+                                    <select class="form-select" id="active" th:field="*{active}">
+                                        <option th:value="true">Hoạt động</option>
+                                        <option th:value="false">Không hoạt động</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Mô tả</label>
+                            <textarea class="form-control" id="description" th:field="*{description}" rows="3"
+                                      maxlength="500" placeholder="Nhập mô tả về lớp học (tối đa 500 ký tự)"></textarea>
+                            <div class="form-text">
+                                <span id="charCount">0</span>/500 ký tự
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a th:href="@{/classes}" class="btn btn-secondary me-md-2">
+                                <i class="fas fa-arrow-left me-1"></i>Quay lại
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>Lưu thông tin
+                            </button>
+                            <button type="button" class="btn btn-danger ms-2" th:if="${classEntity.id != null}" data-bs-toggle="modal" data-bs-target="#deleteClassModal">
+                                <i class="fas fa-trash me-1"></i>Xóa lớp học
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Quản lý sinh viên, giảng viên, môn học (chỉ hiển thị khi edit) -->
+            <div th:if="${classEntity != null and classEntity.id != null and classEntity.id > 0}">
+
+                <!-- Quản lý sinh viên -->
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5><i class="fas fa-user-graduate me-2"></i>Quản lý sinh viên</h5>
+                        <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#addStudentModal">
+                            <i class="fas fa-plus"></i> Thêm sinh viên
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                <tr>
+                                    <th>STT</th>
+                                    <th>Họ tên</th>
+                                    <th>Email</th>
+                                    <th>Số điện thoại</th>
+                                    <th>Hành động</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr th:each="student, iterStat : ${classEntity.students}">
+                                    <td th:text="${iterStat.index + 1}">1</td>
+                                    <td th:text="${student.fullName}">Nguyễn Văn A</td>
+                                    <td th:text="${student.email}">student@example.com</td>
+                                    <td th:text="${student.phone}">0123456789</td>
+                                    <td>
+                                        <button class="btn btn-danger btn-sm"
+                                                th:onclick="'removeStudent(' + ${classEntity.id} + ',' + ${student.id} + ')'">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr th:if="${classEntity.students == null or #sets.isEmpty(classEntity.students)}">
+                                    <td colspan="5" class="text-center text-muted">Chưa có sinh viên nào trong lớp</td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quản lý giảng viên -->
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5><i class="fas fa-chalkboard-teacher me-2"></i>Quản lý giảng viên</h5>
+                        <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#addTeacherModal">
+                            <i class="fas fa-plus"></i> Thêm giảng viên
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                <tr>
+                                    <th>STT</th>
+                                    <th>Họ tên</th>
+                                    <th>Email</th>
+                                    <th>Số điện thoại</th>
+                                    <th>Hành động</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr th:each="teacher, iterStat : ${classEntity.teachers}">
+                                    <td th:text="${iterStat.index + 1}">1</td>
+                                    <td th:text="${teacher.fullName}">Nguyễn Thị B</td>
+                                    <td th:text="${teacher.email}">teacher@example.com</td>
+                                    <td th:text="${teacher.phone}">0123456789</td>
+                                    <td>
+                                        <button class="btn btn-danger btn-sm"
+                                                th:onclick="'removeTeacher(' + ${classEntity.id} + ',' + ${teacher.id} + ')'">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr th:if="${classEntity.teachers == null or #sets.isEmpty(classEntity.teachers)}">
+                                    <td colspan="5" class="text-center text-muted">Chưa có giảng viên nào trong lớp</td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quản lý môn học và phân công giảng viên -->
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5><i class="fas fa-book me-2"></i>Phân công môn học - giảng viên</h5>
+                        <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#assignSubjectModal">
+                            <i class="fas fa-plus"></i> Phân công môn học
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                <tr>
+                                    <th>STT</th>
+                                    <th>Môn học</th>
+                                    <th>Số tín chỉ</th>
+                                    <th>Giảng viên</th>
+                                    <th>Hành động</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr th:each="classSubject, iterStat : ${classSubjects}">
+                                    <td th:text="${iterStat.index + 1}">1</td>
+                                    <td th:text="${classSubject.subject.name}">Java Programming</td>
+                                    <td th:text="${classSubject.subject.credits}">3</td>
+                                    <td th:text="${classSubject.teacher.fullName}">Nguyễn Thị C</td>
+                                    <td>
+                                        <button class="btn btn-danger btn-sm"
+                                                th:onclick="'removeSubjectAssignment(' + ${classEntity.id} + ',' + ${classSubject.subject.id} + ',' + ${classSubject.teacher.id} + ')'">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr th:if="${classSubjects == null or #lists.isEmpty(classSubjects)}">
+                                    <td colspan="5" class="text-center text-muted">Chưa có phân công môn học nào</td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        © 2025 Hệ thống Quản lý Sinh viên. All rights reserved.
+    </footer>
+</div>
+
+<!-- Modal thêm sinh viên -->
+<div class="modal fade" id="addStudentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Thêm sinh viên vào lớp</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="studentSelect" class="form-label">Chọn sinh viên</label>
+                    <select class="form-select" id="studentSelect">
+                        <option value="">-- Chọn sinh viên --</option>
+                        <option th:each="student : ${allStudents}"
+                                th:value="${student.id}"
+                                th:text="${student.fullName + ' (' + student.email + ')'}"
+                                th:if="${allStudents != null and (classEntity.students == null or !classEntity.students.contains(student))}">
+                        </option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" onclick="addStudent()">Thêm</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal thêm giảng viên -->
+<div class="modal fade" id="addTeacherModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Thêm giảng viên vào lớp</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="teacherSelect" class="form-label">Chọn giảng viên</label>
+                    <select class="form-select" id="teacherSelect">
+                        <option value="">-- Chọn giảng viên --</option>
+                        <option th:each="teacher : ${allTeachers}"
+                                th:value="${teacher.id}"
+                                th:text="${teacher.fullName + ' (' + teacher.email + ')'}"
+                                th:if="${allTeachers != null and (classEntity.teachers == null or !classEntity.teachers.contains(teacher))}">
+                        </option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" onclick="addTeacher()">Thêm</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal phân công môn học -->
+<div class="modal fade" id="assignSubjectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Phân công môn học - giảng viên</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="subjectSelect" class="form-label">Chọn môn học</label>
+                    <select class="form-select" id="subjectSelect">
+                        <option value="">-- Chọn môn học --</option>
+                        <option th:each="subject : ${allSubjects}"
+                                th:value="${subject.id}"
+                                th:text="${subject.name + ' (' + subject.credits + ' tín chỉ)'}">
+                        </option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="teacherForSubjectSelect" class="form-label">Chọn giảng viên dạy</label>
+                    <select class="form-select" id="teacherForSubjectSelect">
+                        <option value="">-- Chọn giảng viên --</option>
+                        <option th:each="teacher : ${classEntity.teachers}"
+                                th:value="${teacher.id}"
+                                th:text="${teacher.fullName}">
+                        </option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" onclick="assignSubject()">Phân công</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script th:inline="javascript">
+    const classId = /*[[${classEntity.id}]]*/ null;
+    const contextPath = /*[[@{/}]]*/ '';
+
+    // Thêm sinh viên
+    function addStudent() {
+        const studentId = document.getElementById('studentSelect').value;
+        if (!studentId) {
+            alert('Vui lòng chọn sinh viên!');
+            return;
+        }
+
+        fetch(`${contextPath}classes/${classId}/students/${studentId}/add`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+            .then(response => response.text())
+            .then(result => {
+                if (result === 'success') {
+                    location.reload();
+                } else {
+                    alert('Có lỗi xảy ra!');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Có lỗi xảy ra khi kết nối!');
+            });
+    }
+
+    // Xóa sinh viên
+    function removeStudent(classId, studentId) {
+        if (confirm('Bạn có chắc muốn xóa sinh viên này khỏi lớp?')) {
+            fetch(`${contextPath}classes/${classId}/students/${studentId}/remove`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+                .then(response => response.text())
+                .then(result => {
+                    if (result === 'success') {
+                        location.reload();
+                    } else {
+                        alert('Có lỗi xảy ra!');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Có lỗi xảy ra khi kết nối!');
+                });
+        }
+    }
+
+    // Thêm giảng viên
+    function addTeacher() {
+        const teacherId = document.getElementById('teacherSelect').value;
+        if (!teacherId) {
+            alert('Vui lòng chọn giảng viên!');
+            return;
+        }
+
+        fetch(`${contextPath}classes/${classId}/teachers/${teacherId}/add`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+            .then(response => response.text())
+            .then(result => {
+                if (result === 'success') {
+                    location.reload();
+                } else {
+                    alert('Có lỗi xảy ra!');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Có lỗi xảy ra khi kết nối!');
+            });
+    }
+
+    // Xóa giảng viên
+    function removeTeacher(classId, teacherId) {
+        if (confirm('Bạn có chắc muốn xóa giảng viên này khỏi lớp?')) {
+            fetch(`${contextPath}classes/${classId}/teachers/${teacherId}/remove`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+                .then(response => response.text())
+                .then(result => {
+                    if (result === 'success') {
+                        location.reload();
+                    } else {
+                        alert('Có lỗi xảy ra!');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Có lỗi xảy ra khi kết nối!');
+                });
+        }
+    }
+
+    // Phân công môn học
+    function assignSubject() {
+        const subjectId = document.getElementById('subjectSelect').value;
+        const teacherId = document.getElementById('teacherForSubjectSelect').value;
+
+        if (!subjectId || !teacherId) {
+            alert('Vui lòng chọn đầy đủ môn học và giảng viên!');
+            return;
+        }
+
+        fetch(`${contextPath}classes/${classId}/subjects/${subjectId}/teachers/${teacherId}/assign`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+            .then(response => response.text())
+            .then(result => {
+                if (result === 'success') {
+                    location.reload();
+                } else {
+                    alert('Có lỗi xảy ra!');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Có lỗi xảy ra khi kết nối!');
+            });
+    }
+
+    // Xóa phân công môn học
+    function removeSubjectAssignment(classId, subjectId, teacherId) {
+        if (confirm('Bạn có chắc muốn xóa phân công này?')) {
+            fetch(`${contextPath}classes/${classId}/subjects/${subjectId}/teachers/${teacherId}/remove`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+                .then(response => response.text())
+                .then(result => {
+                    if (result === 'success') {
+                        location.reload();
+                    } else {
+                        alert('Có lỗi xảy ra!');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Có lỗi xảy ra khi kết nối!');
+                });
+        }
+    }
+
+    // Sidebar toggle functions
+    function toggleLogoutDropdown() {
+        const dropdown = document.getElementById("logoutDropdown");
+        if (dropdown) {
+            dropdown.style.display = (dropdown.style.display === "block") ? "none" : "block";
+        }
+    }
+
+    document.addEventListener("click", function (event) {
+        const userInfo = document.querySelector(".user-info");
+        const dropdown = document.getElementById("logoutDropdown");
+        const sidebar = document.getElementById("sidebar");
+        const toggle = document.querySelector(".menu-toggle");
+
+        if (dropdown && userInfo && !userInfo.contains(event.target)) {
+            dropdown.style.display = "none";
+        }
+
+        if (sidebar && !sidebar.contains(event.target) && !toggle.contains(event.target)) {
+            sidebar.classList.remove("show");
+        }
+    });
+
+    // Form validation và UX improvements
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('=== Admin class form loaded ===');
+        console.log('Class ID:', classId);
+        console.log('Context Path:', contextPath);
+
+        // Character counter cho description
+        const descriptionTextarea = document.getElementById('description');
+        const charCountSpan = document.getElementById('charCount');
+
+        if (descriptionTextarea && charCountSpan) {
+            // Cập nhật số ký tự ban đầu
+            charCountSpan.textContent = descriptionTextarea.value.length;
+
+            // Cập nhật khi người dùng nhập
+            descriptionTextarea.addEventListener('input', function() {
+                charCountSpan.textContent = this.value.length;
+
+                // Đổi màu khi gần đạt giới hạn
+                if (this.value.length > 450) {
+                    charCountSpan.style.color = 'red';
+                } else if (this.value.length > 400) {
+                    charCountSpan.style.color = 'orange';
+                } else {
+                    charCountSpan.style.color = 'inherit';
+                }
+            });
+        }
+
+        // Form validation
+        const form = document.querySelector('form');
+        if (form) {
+            form.addEventListener('submit', function(event) {
+                const nameInput = document.getElementById('name');
+                const name = nameInput.value.trim();
+
+                if (!name || name.length < 2) {
+                    event.preventDefault();
+                    nameInput.classList.add('is-invalid');
+                    showNotification('Vui lòng nhập tên lớp học hợp lệ!', 'danger');
+                    return;
+                }
+
+                // Kiểm tra pattern
+                const pattern = /^[A-Za-z0-9\s\-_]+$/;
+                if (!pattern.test(name)) {
+                    event.preventDefault();
+                    nameInput.classList.add('is-invalid');
+                    showNotification('Tên lớp học chỉ được chứa chữ cái, số, dấu cách, gạch ngang và gạch dưới!', 'danger');
+                    return;
+                }
+
+                nameInput.classList.remove('is-invalid');
+            });
+        }
+
+        // Remove invalid class khi user bắt đầu nhập
+        const nameInput = document.getElementById('name');
+        if (nameInput) {
+            nameInput.addEventListener('input', function() {
+                this.classList.remove('is-invalid');
+            });
+        }
+
+        // Kiểm tra modal buttons
+        const addStudentBtn = document.querySelector('[data-bs-target="#addStudentModal"]');
+        const addTeacherBtn = document.querySelector('[data-bs-target="#addTeacherModal"]');
+        const assignSubjectBtn = document.querySelector('[data-bs-target="#assignSubjectModal"]');
+
+        console.log('Add Student Button:', addStudentBtn);
+        console.log('Add Teacher Button:', addTeacherBtn);
+        console.log('Assign Subject Button:', assignSubjectBtn);
+
+        // Kiểm tra dữ liệu trong modals
+        const studentSelect = document.getElementById('studentSelect');
+        const teacherSelect = document.getElementById('teacherSelect');
+        const subjectSelect = document.getElementById('subjectSelect');
+
+        console.log('Student Select Options:', studentSelect ? studentSelect.options.length : 'null');
+        console.log('Teacher Select Options:', teacherSelect ? teacherSelect.options.length : 'null');
+        console.log('Subject Select Options:', subjectSelect ? subjectSelect.options.length : 'null');
+
+        // Test modal functionality
+        if (addStudentBtn) {
+            addStudentBtn.addEventListener('click', function() {
+                console.log('Student modal button clicked');
+            });
+        }
+
+        if (addTeacherBtn) {
+            addTeacherBtn.addEventListener('click', function() {
+                console.log('Teacher modal button clicked');
+            });
+        }
+
+        if (assignSubjectBtn) {
+            assignSubjectBtn.addEventListener('click', function() {
+                console.log('Subject assignment modal button clicked');
+            });
+        }
+    });
+
+    // Hàm hiển thị thông báo
+    function showNotification(message, type = 'info') {
+        // Tạo thông báo Bootstrap
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+        alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+
+        document.body.appendChild(alertDiv);
+
+        // // Tự động ẩn sau 3 giây
+        // setTimeout(() => {
+        //     if (alertDiv.parentNode) {
+        //         alertDiv.remove();
+        //     }
+        // }, 3000);
+    }
+</script>
+
+</body>
+</html>

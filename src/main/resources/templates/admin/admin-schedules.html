@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bảng Quản Trị - Lịch Học</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/admin/admin-panel.css}">
+    <script src="https://cdn.tailwindcss.com"></script>
+
+</head>
+<body>
+<div class="wrapper">
+    <!-- Header -->
+    <header>
+        <div class="menu-toggle" onclick="toggleSidebar()">
+            <i class="fas fa-bars"></i>
+        </div>
+        <div class="user-info">
+            <i class="fas fa-user me-2" onclick="toggleLogoutDropdown()"></i>
+            <div id="logoutDropdown" class="logout-dropdown">
+                <form th:action="@{/logout}" method="post">
+                    <button type="submit" class="btn btn-sm btn-outline-danger w-100">Logout</button>
+                </form>
+            </div>
+        </div>
+    </header>
+
+    <div class="sidebar" id="sidebar">
+        <a th:href="@{/admin/panel}" class="sidebar-link home-link">
+            <i class="bi bi-house-door-fill"></i>Trang chủ
+        </a>
+        <a th:href="@{/admin/info}"><i class="fas fa-user me-2"></i>Tài khoản</a>
+        <a th:href="@{/subjects}"><i class="fas fa-book me-2"></i>Môn học</a>
+        <a th:href="@{/classes}"><i class="fas fa-chalkboard me-2"></i>Lớp học</a>
+        <a th:href="@{/admin/grades}"><i class="fas fa-id-badge me-2"></i>Điểm số</a>
+        <a th:href="@{/admin/schedules}" class="sidebar-link active"><i class="fas fa-calendar-alt me-2"></i>Lịch học</a>
+        <a th:href="@{/admin/registrations}" class="sidebar-link active"><i class="fas fa-user-plus me-2"></i>Đăng ký</a>
+    </div>
+
+    <div class="main-content">
+        <!-- Success/Error Messages -->
+        <div th:if="${message}" class="alert alert-success mb-4 p-4 bg-green-100 border-l-4 border-green-500 text-green-700 rounded">
+            <div class="flex items-center">
+                <i class="fas fa-check-circle mr-2"></i>
+                <span th:text="${message}"></span>
+            </div>
+        </div>
+        
+        <div th:if="${error}" class="alert alert-error mb-4 p-4 bg-red-100 border-l-4 border-red-500 text-red-700 rounded">
+            <div class="flex items-center">
+                <i class="fas fa-exclamation-circle mr-2"></i>
+                <span th:text="${error}"></span>
+            </div>
+        </div>
+        
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold text-gray-800">Quản lý Lịch Học</h2>
+            <button onclick="openCreateModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center">
+                <i class="fas fa-plus mr-2"></i> Tạo lịch mới
+            </button>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="mb-6 border-b border-gray-200">
+            <ul class="flex flex-wrap -mb-px" id="scheduleTabs">
+                <li class="mr-2">
+                    <button onclick="changeView('day')" class="inline-block p-4 border-b-2 border-blue-600 rounded-t-lg text-blue-600">Ngày</button>
+                </li>
+                <li class="mr-2">
+                    <button onclick="changeView('week')" class="inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300">Tuần</button>
+                </li>
+                <li class="mr-2">
+                    <button onclick="changeView('month')" class="inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300">Tháng</button>
+                </li>
+                <li class="mr-2">
+                    <button onclick="changeView('list')" class="inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300">Danh sách</button>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Calendar View -->
+        <div id="calendarView" class="bg-white rounded-lg shadow overflow-hidden">
+            <div class="flex items-center justify-between p-4 border-b">
+                <div class="flex items-center space-x-4">
+                    <button onclick="prevPeriod()" class="p-2 rounded-full hover:bg-gray-100">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <h3 id="currentPeriod" class="text-lg font-semibold">Tháng 10, 2023</h3>
+                    <button onclick="nextPeriod()" class="p-2 rounded-full hover:bg-gray-100">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                    <button onclick="goToToday()" class="ml-4 px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded">Hôm nay</button>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <div class="relative">
+                        <input type="text" id="searchSchedule" placeholder="Tìm kiếm lịch..." class="pl-8 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Calendar Grid -->
+            <div id="calendarGrid" class="p-4">
+                <!-- Day View -->
+                <div id="dayView" class="hidden">
+                    <div class="grid grid-cols-1 gap-4">
+                        <div class="bg-blue-50 p-4 rounded-lg">
+                            <div class="font-semibold text-blue-800">Thứ Hai, 16/10/2023</div>
+                        </div>
+                        <div class="space-y-2">
+                            <!-- Time slots will be generated here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Week View -->
+                <div id="weekView" class="hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                            <tr>
+                                <th class="p-2 border bg-gray-50">Thời gian</th>
+                                <th class="p-2 border bg-gray-50">Thứ 2</th>
+                                <th class="p-2 border bg-gray-50">Thứ 3</th>
+                                <th class="p-2 border bg-gray-50">Thứ 4</th>
+                                <th class="p-2 border bg-gray-50">Thứ 5</th>
+                                <th class="p-2 border bg-gray-50">Thứ 6</th>
+                                <th class="p-2 border bg-gray-50">Thứ 7</th>
+                            </tr>
+                            </thead>
+                            <tbody id="weekTimeSlots">
+                            <!-- Time slots will be generated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Month View -->
+                <div id="monthView">
+                    <div class="grid grid-cols-7 gap-1">
+                        <div class="p-2 text-center font-medium bg-gray-50">CN</div>
+                        <div class="p-2 text-center font-medium bg-gray-50">Thứ 2</div>
+                        <div class="p-2 text-center font-medium bg-gray-50">Thứ 3</div>
+                        <div class="p-2 text-center font-medium bg-gray-50">Thứ 4</div>
+                        <div class="p-2 text-center font-medium bg-gray-50">Thứ 5</div>
+                        <div class="p-2 text-center font-medium bg-gray-50">Thứ 6</div>
+                        <div class="p-2 text-center font-medium bg-gray-50">Thứ 7</div>
+
+                        <!-- Calendar days will be generated here -->
+                        <div id="monthDays" class="col-span-7 grid grid-cols-7 gap-1">
+                            <!-- Days will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- List View -->
+                <div id="listView" class="hidden">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Môn học</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lớp</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Giảng viên</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thời gian</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phòng</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hành động</th>
+                            </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <tr th:each="schedule : ${schedules}" th:if="${schedules != null and !schedules.empty}">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" th:text="${schedule.subject.name}">Môn học</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" th:text="${schedule.classEntity.name}">Lớp</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" th:text="${schedule.teacher.fullName}">Giảng viên</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        <div th:switch="${schedule.dayOfWeek}">
+                                            <span th:case="1">Thứ 2</span>
+                                            <span th:case="2">Thứ 3</span>
+                                            <span th:case="3">Thứ 4</span>
+                                            <span th:case="4">Thứ 5</span>
+                                            <span th:case="5">Thứ 6</span>
+                                            <span th:case="6">Thứ 7</span>
+                                        </div>
+                                        <span th:text="${schedule.timeSlot.startTime} + ' - ' + ${schedule.timeSlot.endTime}"></span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" th:text="${schedule.room.name}">Phòng</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span th:switch="${schedule.status}"
+                                              class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium">
+                                            <span th:case="'PENDING'" class="bg-yellow-100 text-yellow-800">Chờ duyệt</span>
+                                            <span th:case="'CONFIRMED'" class="bg-green-100 text-green-800">Đã duyệt</span>
+                                            <span th:case="'CANCELLED'" class="bg-red-100 text-red-800">Đã hủy</span>
+                                            <span th:case="'COMPLETED'" class="bg-blue-100 text-blue-800">Hoàn thành</span>
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <a th:href="@{'/admin/schedules/' + ${schedule.id}}" class="text-blue-600 hover:text-blue-900 mr-3">Xem</a>
+                                        <a th:href="@{'/admin/schedules/' + ${schedule.id} + '/edit'}" class="text-yellow-600 hover:text-yellow-900 mr-3">Sửa</a>
+                                        <button th:if="${schedule.status.name() == 'PENDING'}" 
+                                                th:onclick="'confirmSchedule(' + ${schedule.id} + ')'" 
+                                                class="text-green-600 hover:text-green-900 mr-3">Duyệt</button>
+                                        <button th:onclick="'cancelSchedule(' + ${schedule.id} + ')'" 
+                                                class="text-red-600 hover:text-red-900">Hủy</button>
+                                    </td>
+                                </tr>
+                                <tr th:if="${schedules == null or schedules.empty}">
+                                    <td colspan="7" class="px-6 py-4 text-center text-gray-500">Chưa có lịch học nào</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Conflict Alert -->
+        <div id="conflictAlert" class="hidden mt-4 p-4 bg-red-100 border-l-4 border-red-500 text-red-700 rounded">
+            <div class="flex items-center">
+                <i class="fas fa-exclamation-circle mr-2"></i>
+                <div>
+                    <p class="font-semibold">Có xung đột lịch học!</p>
+                    <p id="conflictDetails" class="text-sm">Giảng viên Nguyễn Văn A đã có lịch dạy vào thời gian này</p>
+                </div>
+                <button onclick="closeConflictAlert()" class="ml-auto text-red-700 hover:text-red-900">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
+            <div class="bg-white p-4 rounded-lg shadow">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
+                        <i class="fas fa-calendar-day text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-gray-500">Lịch hôm nay</p>
+                        <h3 class="text-xl font-semibold">5</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-green-100 text-green-600 mr-4">
+                        <i class="fas fa-chalkboard-teacher text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-gray-500">Giảng viên</p>
+                        <h3 class="text-xl font-semibold">32</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-purple-100 text-purple-600 mr-4">
+                        <i class="fas fa-school text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-gray-500">Lớp học</p>
+                        <h3 class="text-xl font-semibold">18</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-yellow-100 text-yellow-600 mr-4">
+                        <i class="fas fa-exclamation-triangle text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-gray-500">Xung đột</p>
+                        <h3 class="text-xl font-semibold">2</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        © 2025 Hệ thống Quản lý Sinh viên. All rights reserved.
+    </footer>
+</div>
+
+<!-- Create Schedule Modal -->
+<div id="createModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
+        <div class="flex justify-between items-center border-b pb-3">
+            <h3 class="text-xl font-semibold text-gray-900">Tạo lịch học mới</h3>
+            <button onclick="closeCreateModal()" class="text-gray-400 hover:text-gray-500">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="mt-4">
+            <form th:action="@{/admin/schedules/create}" method="post" th:object="${newSchedule}">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Môn học</label>
+                        <select name="subjectId" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Chọn môn học</option>
+                            <option th:each="subject : ${subjects}" th:value="${subject.id}" th:text="${subject.name}"></option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Lớp học</label>
+                        <select name="classId" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Chọn lớp học</option>
+                            <option th:each="class : ${classes}" th:value="${class.id}" th:text="${class.name}"></option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Giảng viên</label>
+                        <select name="teacherId" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Chọn giảng viên</option>
+                            <option th:each="teacher : ${teachers}" th:value="${teacher.id}" th:text="${teacher.fullName}"></option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Phòng học</label>
+                        <select name="roomId" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Chọn phòng học</option>
+                            <option th:each="room : ${rooms}" th:value="${room.id}" th:text="${room.name}"></option>
+                        </select>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Khung giờ</label>
+                        <select name="timeSlotId" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Chọn khung giờ</option>
+                            <option th:each="timeSlot : ${timeSlots}" 
+                                    th:value="${timeSlot.id}" 
+                                    th:text="${timeSlot.startTime} + ' - ' + ${timeSlot.endTime}"></option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Ngày trong tuần</label>
+                        <select th:field="*{dayOfWeek}" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Chọn ngày</option>
+                            <option value="1">Thứ 2</option>
+                            <option value="2">Thứ 3</option>
+                            <option value="3">Thứ 4</option>
+                            <option value="4">Thứ 5</option>
+                            <option value="5">Thứ 6</option>
+                            <option value="6">Thứ 7</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Ngày bắt đầu</label>
+                        <input type="date" th:field="*{startDate}" required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Giờ bắt đầu</label>
+                            <input type="time" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Giờ kết thúc</label>
+                            <input type="time" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Loại lịch</label>
+                        <select class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                            <option value="single">Một lần</option>
+                            <option value="weekly">Hàng tuần</option>
+                            <option value="biweekly">Hai tuần một lần</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Số tuần (nếu lặp lại)</label>
+                        <input type="number" min="1" max="15" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Ghi chú</label>
+                    <textarea rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"></textarea>
+                </div>
+
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button type="button" onclick="closeCreateModal()" class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        Hủy bỏ
+                    </button>
+                    <button type="button" onclick="checkConflict()" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        Kiểm tra xung đột
+                    </button>
+                    <button type="submit" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                        Lưu lịch
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Schedule Detail Modal -->
+<div id="detailModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white">
+        <div class="flex justify-between items-center border-b pb-3">
+            <h3 class="text-xl font-semibold text-gray-900">Chi tiết lịch học</h3>
+            <button onclick="closeDetailModal()" class="text-gray-400 hover:text-gray-500">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="mt-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <p class="text-sm text-gray-500">Môn học</p>
+                    <p class="font-medium">Toán cao cấp</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Lớp học</p>
+                    <p class="font-medium">CNTT1 - K15</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Giảng viên</p>
+                    <p class="font-medium">Nguyễn Văn A</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Phòng học</p>
+                    <p class="font-medium">P.301 - Nhà A1</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Ngày học</p>
+                    <p class="font-medium">Thứ 2, 16/10/2023</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Thời gian</p>
+                    <p class="font-medium">7:30 - 9:30</p>
+                </div>
+                <div class="md:col-span-2">
+                    <p class="text-sm text-gray-500">Ghi chú</p>
+                    <p class="font-medium">Buổi học đầu tiên của môn Toán cao cấp. Chuẩn bị bài giảng chương 1.</p>
+                </div>
+            </div>
+
+            <div class="mt-6 pt-4 border-t">
+                <h4 class="font-medium mb-2">Danh sách sinh viên đăng ký</h4>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">MSSV</th>
+                            <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Họ tên</th>
+                            <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
+                            <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hành động</th>
+                        </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                        <tr>
+                            <td class="px-3 py-2 whitespace-nowrap text-sm">20110001</td>
+                            <td class="px-3 py-2 whitespace-nowrap text-sm">Trần Văn B</td>
+                            <td class="px-3 py-2 whitespace-nowrap text-sm">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Đã đăng ký</span>
+                            </td>
+                            <td class="px-3 py-2 whitespace-nowrap text-sm">
+                                <button class="text-blue-600 hover:text-blue-900">Xem</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="px-3 py-2 whitespace-nowrap text-sm">20110002</td>
+                            <td class="px-3 py-2 whitespace-nowrap text-sm">Lê Thị C</td>
+                            <td class="px-3 py-2 whitespace-nowrap text-sm">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Chờ duyệt</span>
+                            </td>
+                            <td class="px-3 py-2 whitespace-nowrap text-sm">
+                                <button class="text-blue-600 hover:text-blue-900">Xem</button>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end space-x-3">
+                <button onclick="closeDetailModal()" class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Đóng
+                </button>
+                <button onclick="editSchedule()" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Chỉnh sửa
+                </button>
+                <button onclick="deleteSchedule()" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                    Xóa lịch
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// Confirm schedule
+function confirmSchedule(id) {
+    if (confirm('Bạn có chắc muốn duyệt lịch học này?')) {
+        fetch(`/admin/schedules/${id}/confirm`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(error => {
+            alert('Có lỗi xảy ra: ' + error);
+        });
+    }
+}
+
+// Cancel schedule  
+function cancelSchedule(id) {
+    if (confirm('Bạn có chắc muốn hủy lịch học này?')) {
+        fetch(`/admin/schedules/${id}/cancel`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(error => {
+            alert('Có lỗi xảy ra: ' + error);
+        });
+    }
+}
+
+// Open/Close Modal
+function openCreateModal() {
+    document.getElementById('createModal').classList.remove('hidden');
+}
+
+function closeCreateModal() {
+    document.getElementById('createModal').classList.add('hidden');
+}
+
+// Toggle views
+function showListView() {
+    document.getElementById('listView').classList.remove('hidden');
+    document.getElementById('weekView').classList.add('hidden');
+    document.getElementById('monthView').classList.add('hidden');
+    
+    // Update active tab
+    document.querySelectorAll('.border-b button').forEach(btn => btn.classList.remove('border-blue-500', 'text-blue-600'));
+    event.target.classList.add('border-blue-500', 'text-blue-600');
+}
+
+function showWeekView() {
+    document.getElementById('weekView').classList.remove('hidden');
+    document.getElementById('listView').classList.add('hidden');
+    document.getElementById('monthView').classList.add('hidden');
+    
+    // Update active tab
+    document.querySelectorAll('.border-b button').forEach(btn => btn.classList.remove('border-blue-500', 'text-blue-600'));
+    event.target.classList.add('border-blue-500', 'text-blue-600');
+}
+
+function showMonthView() {
+    document.getElementById('monthView').classList.remove('hidden');
+    document.getElementById('listView').classList.add('hidden');
+    document.getElementById('weekView').classList.add('hidden');
+    
+    // Update active tab  
+    document.querySelectorAll('.border-b button').forEach(btn => btn.classList.remove('border-blue-500', 'text-blue-600'));
+    event.target.classList.add('border-blue-500', 'text-blue-600');
+}
+
+// Form validation and conflict checking
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form[action*="schedules/create"]');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            // Basic validation
+            const required = form.querySelectorAll('[required]');
+            let isValid = true;
+            
+            required.forEach(field => {
+                if (!field.value.trim()) {
+                    field.classList.add('border-red-500');
+                    isValid = false;
+                } else {
+                    field.classList.remove('border-red-500');
+                }
+            });
+            
+            if (!isValid) {
+                e.preventDefault();
+                alert('Vui lòng điền đầy đủ thông tin bắt buộc');
+                return;
+            }
+        });
+    }
+});
+
+// Sidebar and dropdown functions (existing)
+function toggleLogoutDropdown() {
+    const dropdown = document.getElementById("logoutDropdown");
+    if (dropdown) {
+        dropdown.style.display = (dropdown.style.display === "block") ? "none" : "block";
+    }
+}
+
+function toggleSidebar() {
+    const sidebar = document.getElementById("sidebar");
+    if (sidebar) {
+        sidebar.classList.toggle("show");
+    }
+}
+
+document.addEventListener("click", function (event) {
+    const userInfo = document.querySelector(".user-info");
+    const dropdown = document.getElementById("logoutDropdown");
+    const sidebar = document.getElementById("sidebar");
+    const toggle = document.querySelector(".menu-toggle");
+
+    if (dropdown && userInfo && !userInfo.contains(event.target)) {
+        dropdown.style.display = "none";
+    }
+
+    if (sidebar && !sidebar.contains(event.target) && !toggle.contains(event.target)) {
+        sidebar.classList.remove("show");
+    }
+});
+</script>
+</body>
+</html>

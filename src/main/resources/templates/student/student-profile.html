@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thông tin cá nhân - Sinh viên</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/student/student-panel.css}">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</head>
+<style>
+    /* ==== Global Reset and Base Styling ==== */
+    html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        font-family: 'Segoe UI', sans-serif;
+        background: #f9f9f9;
+    }
+
+    .wrapper {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* ==== Header ==== */
+    header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 60px;
+        background: #fff;
+        color: #111;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 24px;
+        z-index: 1000;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .menu-toggle {
+        cursor: pointer !important;
+        font-size: 18px !important;
+        padding: 8px !important;
+        border-radius: 4px !important;
+        transition: all 0.2s ease !important;
+        z-index: 1001 !important;
+        position: relative !important;
+    }
+
+    .menu-toggle:hover {
+        background-color: #f0f0f0 !important;
+    }
+
+    .menu-toggle i {
+        pointer-events: none !important;
+    }
+
+    /* User Info */
+    .user-info {
+        position: relative;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .user-info i {
+        font-size: 18px;
+        color: #333;
+    }
+
+    /* Logout Dropdown */
+    .logout-dropdown {
+        display: none;
+        position: absolute;
+        top: 100%;
+        right: 0;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        z-index: 1000;
+        min-width: 120px;
+        margin-top: 5px;
+    }
+
+    .logout-dropdown button {
+        border: none;
+        background: none;
+        width: 100%;
+        padding: 8px 12px;
+        text-align: left;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+    .logout-dropdown button:hover {
+        background-color: #f8f9fa;
+    }
+
+    /* ==== Sidebar ==== */
+    .student-sidebar {
+        background: #111 !important;
+        color: white !important;
+        width: 240px !important;
+        height: 100vh !important;
+        padding: 90px 20px 30px !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        overflow-y: auto !important;
+        z-index: 999 !important;
+        display: none !important;
+        transition: all 0.3s ease !important;
+    }
+
+    .student-sidebar.show {
+        display: block !important;
+    }
+
+    .student-sidebar h4 {
+        font-size: 16px !important;
+        margin-bottom: 24px !important;
+        color: #bbb !important;
+        letter-spacing: 0.5px !important;
+    }
+
+    .student-sidebar a {
+        display: block !important;
+        color: white !important;
+        text-decoration: none !important;
+        margin-bottom: 12px !important;
+        font-size: 15px !important;
+        padding: 10px 16px !important;
+        border-radius: 8px !important;
+        transition: all 0.2s ease !important;
+    }
+
+    .student-sidebar a:hover {
+        background-color: #f1f1f1 !important;
+        color: #111;
+        transform: translateX(4px);
+    }
+
+    /* ==== Main Content ==== */
+    .main-content {
+        margin-left: 0 !important;
+        padding: 100px 40px 40px !important;
+        flex-grow: 1 !important;
+        background: #f9f9f9 !important;
+        transition: margin-left 0.3s ease !important;
+    }
+
+    .student-sidebar.show ~ .main-content,
+    .main-content.sidebar-shifted {
+        margin-left: 240px !important;
+    }
+
+    .main-content h2 {
+        margin-bottom: 30px;
+        color: #111;
+    }
+
+    /* Grid */
+
+
+    .grid-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 24px;
+    }
+
+
+    .card {
+        background: #fff;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.04);
+        border: 1px solid #e5e5e5;
+        transition: all 0.2s ease;
+    }
+
+    .card:hover {
+        box-shadow: 0 6px 14px rgba(0,0,0,0.08);
+        transform: translateY(-4px);
+    }
+
+    .card h5 {
+        font-size: 16px;
+        font-weight: 600;
+        color: #111;
+        margin-bottom: 8px;
+    }
+
+    .card p {
+        font-size: 14px;
+        color: #555;
+    }
+
+    /* ===== ADDITIONAL CARD STYLES ===== */
+    .hover-card {
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    }
+
+    .hover-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+    }
+
+    .feature-icon {
+        width: 80px;
+        height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .border-left-primary {
+        border-left: 4px solid #007bff !important;
+    }
+
+    /* ==== Footer ==== */
+    footer {
+        background: #fff;
+        color: #888;
+        text-align: center;
+        padding: 12px 20px;
+        font-size: 13px;
+        border-top: 1px solid #e0e0e0;
+        margin-top: auto;
+    }
+
+    @media (min-width: 769px) {
+        .sidebar.show ~ .main-content + footer {
+            margin-left: 240px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .main-content {
+            padding: 100px 20px 40px;
+        }
+    }
+
+</style>
+<body>
+<div class="wrapper">
+    <header>
+        <div class="menu-toggle">
+            <i class="fas fa-bars" onclick="StudentPanel.toggleSidebar()"></i>
+        </div>
+        <div class="user-info">
+            <i class="fas fa-user me-2" onclick="StudentPanel.toggleLogoutDropdown()"></i>
+            <div id="logoutDropdown" class="logout-dropdown">
+                <form th:action="@{/logout}" method="post">
+                    <button type="submit" class="btn btn-sm btn-outline-danger w-100">Đăng xuất</button>
+                </form>
+            </div>
+        </div>
+    </header>
+
+    <div class="student-sidebar" id="sidebar">
+        <a th:href="@{/student/dashboard}" class="sidebar-link home-link">
+            <i class="fas fa-home me-2"></i>Trang chủ
+        </a>
+        <a th:href="@{/student/profile}" class="active"><i class="fas fa-user me-2"></i>Tài khoản cá nhân</a>
+        <a th:href="@{/student/classes}"><i class="fas fa-chalkboard me-2"></i>Lớp học của tôi</a>
+        <a th:href="@{/student/grades}"><i class="fas fa-graduation-cap me-2"></i>Điểm số</a>
+        <a th:href="@{/student/schedule}"><i class="fas fa-calendar-alt me-2"></i>Lịch học </a>
+    </div>
+
+    <div class="main-content">
+        <div class="container">
+            <h2 class="mb-4">
+                <i class="fas fa-user-edit me-2"></i>Thông tin cá nhân
+            </h2>
+
+            <!-- Hiển thị thông báo -->
+            <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="fas fa-check-circle me-2"></i>
+                <span th:text="${message}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                <span th:text="${error}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="card shadow">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-id-card me-2"></i>Cập nhật thông tin cá nhân
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <form th:action="@{/student/update-profile}" method="post">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="fullName" class="form-label">
+                                                <i class="fas fa-user me-1"></i>Họ và tên <span class="text-danger">*</span>
+                                            </label>
+                                            <input type="text" class="form-control" id="fullName" name="fullName"
+                                                   th:value="${student.fullName}" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="username" class="form-label">
+                                                <i class="fas fa-user-tag me-1"></i>Mã sinh viên
+                                            </label>
+                                            <input type="text" class="form-control" id="username"
+                                                   th:value="${student.username}" readonly
+                                                   style="background-color: #f8f9fa;">
+                                            <small class="text-muted">Mã sinh viên không thể thay đổi</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="email" class="form-label">
+                                                <i class="fas fa-envelope me-1"></i>Email <span class="text-danger">*</span>
+                                            </label>
+                                            <input type="email" class="form-control" id="email" name="email"
+                                                   th:value="${student.email}" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="phone" class="form-label">
+                                                <i class="fas fa-phone me-1"></i>Số điện thoại <span class="text-danger">*</span>
+                                            </label>
+                                            <input type="text" class="form-control" id="phone" name="phone"
+                                                   th:value="${student.phone}" required>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <hr class="my-4">
+                                <h6 class="text-muted mb-3">
+                                    <i class="fas fa-lock me-2"></i>Đổi mật khẩu (tùy chọn)
+                                </h6>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="passwordOld" class="form-label">
+                                                <i class="fas fa-key me-1"></i>Mật khẩu cũ
+                                            </label>
+                                            <input type="password" class="form-control" id="passwordOld" name="passwordOld"
+                                                   placeholder="Nhập mật khẩu hiện tại">
+                                            <small class="text-muted">Bắt buộc nếu muốn đổi mật khẩu</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="password" class="form-label">
+                                                <i class="fas fa-lock me-1"></i>Mật khẩu mới
+                                            </label>
+                                            <input type="password" class="form-control" id="password" name="password"
+                                                   placeholder="Nhập mật khẩu mới">
+                                            <small class="text-muted">Để trống nếu không muốn thay đổi</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                                    <a th:href="@{/student/dashboard}" class="btn btn-secondary me-md-2">
+                                        <i class="fas fa-arrow-left me-1"></i>Quay lại
+                                    </a>
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-save me-1"></i>Cập nhật thông tin
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Thông tin học vụ -->
+                    <div class="card mt-3">
+                        <div class="card-body">
+                            <h6 class="card-title">
+                                <i class="fas fa-graduation-cap me-2"></i>Thông tin học vụ
+                            </h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p class="card-text">
+                                        <strong>Vai trò:</strong>
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-user-graduate me-1"></i>Sinh viên
+                                        </span>
+                                    </p>
+                                    <p class="card-text">
+                                        <strong>Trạng thái:</strong>
+                                        <span class="badge bg-success" th:if="${student.enabled}">Hoạt động</span>
+                                        <span class="badge bg-danger" th:unless="${student.enabled}">Không hoạt động</span>
+                                    </p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p class="card-text">
+                                        <strong>Mã sinh viên:</strong>
+                                        <span th:text="${student.username}">SV001</span>
+                                    </p>
+                                    <p class="card-text">
+                                        <strong>Kế hoạch tốt nghiệp:</strong>
+                                        <span class="text-muted">2028</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        © 2025 Hệ thống Quản lý Sinh viên. All rights reserved.
+    </footer>
+</div>
+
+<script>
+    window.StudentPanel = window.StudentPanel || {};
+
+    StudentPanel.toggleLogoutDropdown = function() {
+        const dropdown = document.getElementById("logoutDropdown");
+        if (dropdown) {
+            dropdown.style.display = (dropdown.style.display === "block") ? "none" : "block";
+        }
+    };
+
+    StudentPanel.toggleSidebar = function() {
+        const sidebar = document.getElementById("sidebar");
+        if (sidebar) {
+            sidebar.classList.toggle("show");
+            // Đồng bộ với main content
+            const mainContent = document.querySelector('.main-content');
+            if (mainContent) {
+                mainContent.classList.toggle('sidebar-shifted');
+            }
+            // Close dropdown if open
+            const dropdown = document.getElementById("logoutDropdown");
+            if (dropdown) {
+                dropdown.style.display = "none";
+            }
+        }
+    };
+
+    document.addEventListener("click", function (event) {
+        const userInfo = document.querySelector(".user-info");
+        const dropdown = document.getElementById("logoutDropdown");
+        const sidebar = document.getElementById("sidebar");
+        const menuToggle = document.querySelector(".menu-toggle");
+
+        if (dropdown && userInfo && !userInfo.contains(event.target)) {
+            dropdown.style.display = "none";
+        }
+
+        if (sidebar && !sidebar.contains(event.target) && event.target !== menuToggle && !menuToggle.contains(event.target)) {
+            sidebar.classList.remove("show");
+            // Đồng bộ với main content
+            const mainContent = document.querySelector('.main-content');
+            if (mainContent) {
+                mainContent.classList.remove('sidebar-shifted');
+            }
+        }
+    });
+    document.addEventListener("DOMContentLoaded", function() {
+        // Click handler for menu toggle
+        const menuToggle = document.querySelector('.menu-toggle');
+        if (menuToggle) {
+            menuToggle.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                StudentPanel.toggleSidebar();
+            });
+        }
+
+        // Close sidebar when clicking outside
+        document.addEventListener('click', function(e) {
+            const sidebar = document.getElementById('sidebar');
+            const menuToggle = document.querySelector('.menu-toggle');
+
+            if (sidebar && !sidebar.contains(e.target) &&
+                e.target !== menuToggle && !menuToggle.contains(e.target)) {
+                sidebar.classList.remove('show');
+                const mainContent = document.querySelector('.main-content');
+                if (mainContent) {
+                    mainContent.classList.remove('sidebar-shifted');
+                }
+            }
+        });
+    });
+
+    // Thêm validation cho form
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.querySelector('form');
+        if (form) {
+            form.addEventListener('submit', function(event) {
+                const fullName = document.getElementById('fullName').value.trim();
+                const email = document.getElementById('email').value.trim();
+                const phone = document.getElementById('phone').value.trim();
+                const passwordOld = document.getElementById('passwordOld').value;
+                const password = document.getElementById('password').value;
+
+                // Validation
+                if (!fullName || fullName.length < 2) {
+                    event.preventDefault();
+                    alert('Họ tên phải có ít nhất 2 ký tự!');
+                    return;
+                }
+
+                if (!email || !email.includes('@')) {
+                    event.preventDefault();
+                    alert('Email không hợp lệ!');
+                    return;
+                }
+
+                if (!phone || phone.length < 10) {
+                    event.preventDefault();
+                    alert('Số điện thoại không hợp lệ!');
+                    return;
+                }
+
+                // Kiểm tra mật khẩu
+                if (password && !passwordOld) {
+                    event.preventDefault();
+                    alert('Vui lòng nhập mật khẩu cũ khi đổi mật khẩu!');
+                    return;
+                }
+
+                if (password && password.length < 6) {
+                    event.preventDefault();
+                    alert('Mật khẩu mới phải có ít nhất 6 ký tự!');
+                    return;
+                }
+
+                // Hiển thị loading
+                const submitBtn = form.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Đang cập nhật...';
+                    submitBtn.disabled = true;
+                }
+            });
+        }
+    });
+
+</script>
+</body>
+</html>

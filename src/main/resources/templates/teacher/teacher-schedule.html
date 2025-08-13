@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lịch dạy - Giảng viên</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!--    <link rel="stylesheet" th:href="@{/admin/admin-panel.css}">-->
+
+
+</head>
+<style>
+    html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        font-family: 'Segoe UI', sans-serif;
+        background: #f9f9f9;
+    }
+
+    .wrapper {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Header */
+    header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 60px;
+        background: #ffffff;
+        color: #111;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 24px;
+        z-index: 1000;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .menu-toggle {
+        font-size: 20px;
+        cursor: pointer;
+    }
+
+    /* User Info */
+    .user-info {
+        position: relative;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .user-info i {
+        font-size: 18px;
+        color: #333;
+    }
+
+    /* Logout Dropdown */
+    .logout-dropdown {
+        display: none;
+        position: absolute;
+        top: 100%;
+        right: 0;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        z-index: 1000;
+        min-width: 120px;
+        margin-top: 5px;
+    }
+
+    .logout-dropdown button {
+        border: none;
+        background: none;
+        width: 100%;
+        padding: 8px 12px;
+        text-align: left;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+    .logout-dropdown button:hover {
+        background-color: #f8f9fa;
+    }
+
+    /* Sidebar */
+    .sidebar {
+        background: #111;
+        color: white;
+        width: 240px;
+        height: 100vh;
+        padding: 90px 20px 30px;
+        position: fixed;
+        top: 0;
+        left: 0;
+        overflow-y: auto;
+        z-index: 999;
+    }
+
+    .sidebar h4 {
+        font-size: 16px;
+        margin-bottom: 24px;
+        color: #bbb;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+    }
+
+    .sidebar a {
+        display: block;
+        color: white;
+        text-decoration: none;
+        margin-bottom: 14px;
+        font-size: 15px;
+        padding: 10px 16px;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+    }
+
+    .sidebar a:hover {
+        background-color: #f1f1f1;
+        color: #111;
+        transform: translateX(4px);
+    }
+
+    /* Main Content */
+    .main-content {
+        margin-left: 240px;
+        padding: 100px 40px 60px;
+        background: #f9f9f9;
+        flex-grow: 1;
+    }
+
+    .main-content h2 {
+        margin-bottom: 30px;
+        color: #111;
+        font-size: 24px;
+    }
+
+    /* Grid */
+    .grid-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 24px;
+    }
+
+    /* Card */
+    .card {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+        border: 1px solid #e5e5e5;
+        transition: all 0.2s ease;
+    }
+
+    .card:hover {
+        box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+        transform: translateY(-4px);
+    }
+
+    .card h5 {
+        font-size: 16px;
+        font-weight: 600;
+        color: #111;
+        margin-bottom: 8px;
+    }
+
+    .card p {
+        font-size: 14px;
+        color: #555;
+    }
+
+    /* Footer */
+    footer {
+        background: #ffffff;
+        color: #888;
+        text-align: center;
+        padding: 12px 20px;
+        margin-left: 240px;
+        border-top: 1px solid #e0e0e0;
+        font-size: 13px;
+        z-index: 1000;
+        position: relative;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .sidebar {
+            display: none;
+        }
+        .main-content, footer {
+            margin-left: 0;
+            padding: 100px 20px 60px;
+        }
+    }
+
+</style>
+<body>
+<div class="wrapper">
+
+    <!-- Header -->
+    <header>
+        <div class="menu-toggle" onclick="toggleSidebar()">
+            <i class="fas fa-bars"></i>
+        </div>
+        <div class="user-info">
+            <i class="fas fa-user me-2" onclick="toggleLogoutDropdown()"></i>
+
+            <div id="logoutDropdown" class="logout-dropdown">
+                <form th:action="@{/logout}" method="post">
+                    <button type="submit" class="btn btn-sm btn-outline-danger w-100">Logout</button>
+                </form>
+            </div>
+        </div>
+    </header>
+
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <a th:href="@{/teacher/dashboard}" class="active"><i class="fas fa-home me-2"></i>Trang chủ</a>
+        <a th:href="@{/teacher/profile}"><i class="fas fa-user-cog me-2"></i>Tài khoản cá nhân</a>
+        <a th:href="@{/teacher/classes}"><i class="fas fa-chalkboard-teacher me-2"></i>Lớp đang dạy</a>
+        <a th:href="@{/teacher/grades}"><i class="fas fa-clipboard me-2"></i>Quản lý điểm</a>
+        <a th:href="@{/teacher/schedule}"><i class="fas fa-calendar-alt me-2"></i>Lịch dạy</a>
+    </div>
+
+    <div class="main-content">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold text-gray-800">Lịch Giảng Dạy</h2>
+            <div class="flex space-x-2">
+                <button onclick="openAddShiftModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center">
+                    <i class="fas fa-plus mr-2"></i> Đề xuất dạy thêm
+                </button>
+                <button onclick="printSchedule()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg flex items-center">
+                    <i class="fas fa-print mr-2"></i> In lịch
+                </button>
+            </div>
+        </div>
+
+        <!-- Calendar Navigation -->
+        <div class="bg-white rounded-lg shadow p-4 mb-6">
+            <div class="flex justify-between items-center mb-4">
+                <div>
+                    <button onclick="changeWeek(-1)" class="bg-gray-100 hover:bg-gray-200 p-2 rounded-full mr-2">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button onclick="changeWeek(1)" class="bg-gray-100 hover:bg-gray-200 p-2 rounded-full">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                    <span class="ml-4 font-semibold text-lg" id="current-week">Tuần 15 (10/04 - 16/04)</span>
+                </div>
+                <div>
+                    <button onclick="showWeekView()" class="bg-blue-100 text-blue-600 px-3 py-1 rounded mr-2">Tuần</button>
+                    <button onclick="showMonthView()" class="bg-gray-100 text-gray-600 px-3 py-1 rounded">Tháng</button>
+                </div>
+            </div>
+
+            <!-- Week View Calendar -->
+            <div id="week-view" class="overflow-x-auto">
+                <div class="min-w-max">
+                    <div class="grid grid-cols-8 gap-1">
+                        <!-- Time column -->
+                        <div class="bg-gray-100 p-2 font-medium text-center">Giờ</div>
+
+                        <!-- Day headers -->
+                        <div class="bg-gray-100 p-2 font-medium text-center">Thứ 2</div>
+                        <div class="bg-gray-100 p-2 font-medium text-center">Thứ 3</div>
+                        <div class="bg-gray-100 p-2 font-medium text-center">Thứ 4</div>
+                        <div class="bg-gray-100 p-2 font-medium text-center">Thứ 5</div>
+                        <div class="bg-gray-100 p-2 font-medium text-center">Thứ 6</div>
+                        <div class="bg-gray-100 p-2 font-medium text-center">Thứ 7</div>
+                        <div class="bg-gray-100 p-2 font-medium text-center">Chủ Nhật</div>
+
+                        <!-- Time slots -->
+                        <div class="col-span-8 grid grid-cols-8 gap-1">
+                            <!-- Morning sessions -->
+                            <div class="row-span-3 bg-gray-50 p-2 border-t border-gray-200 text-xs text-gray-500 text-center">Sáng</div>
+
+                            <!-- 7:00 - 9:00 -->
+                            <div class="bg-gray-50 p-2 border-t border-gray-200 text-xs text-gray-500 text-center">7:00 - 9:00</div>
+                            <!-- Monday -->
+                            <div class="p-2 border-t border-gray-200">
+                                <div class="schedule-card subject-math bg-white p-3 rounded shadow-sm mb-2">
+                                    <div class="font-medium text-blue-600">Toán Cao Cấp</div>
+                                    <div class="text-sm">Lớp: CNTT1</div>
+                                    <div class="text-sm">Phòng: A1.201</div>
+                                    <div class="flex justify-between mt-2">
+                                        <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">Đã xác nhận</span>
+                                        <button onclick="openDetailModal(1)" class="text-xs text-blue-600 hover:text-blue-800">Chi tiết</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Tuesday -->
+                            <div class="p-2 border-t border-gray-200"></div>
+                            <!-- Wednesday -->
+                            <div class="p-2 border-t border-gray-200">
+                                <div class="schedule-card subject-physics bg-white p-3 rounded shadow-sm mb-2">
+                                    <div class="font-medium text-green-600">Vật Lý Đại Cương</div>
+                                    <div class="text-sm">Lớp: CNTT2</div>
+                                    <div class="text-sm">Phòng: A2.105</div>
+                                    <div class="flex justify-between mt-2">
+                                        <span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">Chờ xác nhận</span>
+                                        <button onclick="openDetailModal(2)" class="text-xs text-blue-600 hover:text-blue-800">Chi tiết</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Thursday -->
+                            <div class="p-2 border-t border-gray-200"></div>
+                            <!-- Friday -->
+                            <div class="p-2 border-t border-gray-200"></div>
+                            <!-- Saturday -->
+                            <div class="p-2 border-t border-gray-200"></div>
+                            <!-- Sunday -->
+                            <div class="p-2 border-t border-gray-200"></div>
+
+                            <!-- 9:00 - 11:00 -->
+                            <div class="bg-gray-50 p-2 border-t border-gray-200 text-xs text-gray-500 text-center">9:00 - 11:00</div>
+                            <!-- Monday -->
+                            <div class="p-2 border-t border-gray-200"></div>
+                            <!-- Tuesday -->
+                            <div class="p-2 border-t border-gray-200">
+                                <div class="schedule-card subject-chemistry bg-white p-3 rounded shadow-sm mb-2">
+                                    <div class="font-medium text-yellow-600">Hóa Học Đại Cương</div>
+                                    <div class="text-sm">Lớp: CNTT1</div>
+                                    <div class="text-sm">Phòng: B1.302</div>
+                                    <div class="flex justify-between mt-2">
+                                        <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">Đã xác nhận</span>
+                                        <button onclick="openDetailModal(3)" class="text-xs text-blue-600 hover:text-blue-800">Chi tiết</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Wednesday -->
+                            <div class="p-2 border-t border-gray-200"></div>
+                            <!-- Thursday -->
+                            <div class="p-2 border-t border-gray-200"></div>
+                            <!-- Friday -->
+                            <div class="p-2 border-t border-gray-200">
+                                <div class="schedule-card subject-biology bg-white p-3 rounded shadow-sm mb-2">
+                                    <div class="font-medium text-pink-600">Sinh Học Đại Cương</div>
+                                    <div class="text-sm">Lớp: CNTT3</div>
+                                    <div class="text-sm">Phòng: A1.205</div>
+                                    <div class="flex justify-between mt-2">
+                                        <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">Đã xác nhận</span>
+                                        <button onclick="openDetailModal(4)" class="text-xs text-blue-600 hover:text-blue-800">Chi tiết</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Saturday -->
+                            <div class="p-2 border-t border-gray-200"></div>
+                            <!-- Sunday -->
+                            <div class="p-2 border-t border-gray-200"></div>
+
+                            <!-- Afternoon sessions -->
+                            <div class="row-span-4 bg-gray-50 p-2 border-t border-gray-200 text-xs text-gray-500 text-center">Chiều</div>
+
+                            <!-- 13:00 - 15:00 -->
+                            <div class="bg-gray-50 p-2 border-t border-gray-200 text-xs text-gray-500 text-center">13:00 - 15:00</div>
+                            <!-- Monday -->
+                            <div class="p-2 border-t border-gray-200"></div>
+                            <!-- Tuesday -->
+                            <div class="p-2 border-t border-gray-200"></div>
+                            <!-- Wednesday -->
+                            <div class="p-2 border-t border-gray-200"></div>
+                            <!-- Thursday -->
+                            <div class="p-2 border-t border-gray-200">
+                                <div class="schedule-card subject-literature bg-white p-3 rounded shadow-sm mb-2">
+                                    <div class="font-medium text-purple-600">Văn Học Việt Nam</div>
+                                    <div class="text-sm">Lớp: CNTT1</div>
+                                    <div class="text-sm">Phòng: C1.101</div>
+                                    <div class="flex justify-between mt-2">
+                                        <span class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">Yêu cầu đổi ca</span>
+                                        <button onclick="openDetailModal(5)" class="text-xs text-blue-600 hover:text-blue-800">Chi tiết</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Friday -->
+                            <div class="p-2 border-t border-gray-200"></div>
+                            <!-- Saturday -->
+                            <div class="p-2 border-t border-gray-200"></div>
+                            <!-- Sunday -->
+                            <div class="p-2 border-t border-gray-200"></div>
+
+                            <!-- 15:00 - 17:00 -->
+                            <div class="bg-gray-50 p-2 border-t border-gray-200 text-xs text-gray-500 text-center">15:00 - 17:00</div>
+                            <!-- Monday -->
+                            <div class="p-2 border-t border-gray-200"></div>
+                            <!-- Tuesday -->
+                            <div class="p-2 border-t border-gray-200"></div>
+                            <!-- Wednesday -->
+                            <div class="p-2 border-t border-gray-200"></div>
+                            <!-- Thursday -->
+                            <div class="p-2 border-t border-gray-200"></div>
+                            <!-- Friday -->
+                            <div class="p-2 border-t border-gray-200"></div>
+                            <!-- Saturday -->
+                            <div class="p-2 border-t border-gray-200"></div>
+                            <!-- Sunday -->
+                            <div class="p-2 border-t border-gray-200"></div>
+
+                            <!-- Evening sessions -->
+                            <div class="row-span-2 bg-gray-50 p-2 border-t border-gray-200 text-xs text-gray-500 text-center">Tối</div>
+
+                            <!-- 18:00 - 20:00 -->
+                            <div class="bg-gray-50 p-2 border-t border-gray-200 text-xs text-gray-500 text-center">18:00 - 20:00</div>
+                            <!-- Monday -->
+                            <div class="p-2 border-t border-gray-200"></div>
+                            <!-- Tuesday -->
+                            <div class="p-2 border-t border-gray-200"></div>
+                            <!-- Wednesday -->
+                            <div class="p-2 border-t border-gray-200"></div>
+                            <!-- Thursday -->
+                            <div class="p-2 border-t border-gray-200"></div>
+                            <!-- Friday -->
+                            <div class="p-2 border-t border-gray-200"></div>
+                            <!-- Saturday -->
+                            <div class="p-2 border-t border-gray-200"></div>
+                            <!-- Sunday -->
+                            <div class="p-2 border-t border-gray-200"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Month View Calendar (Hidden by default) -->
+            <div id="month-view" class="hidden">
+                <div class="grid grid-cols-7 gap-1 mb-2">
+                    <div class="bg-gray-100 p-2 font-medium text-center">CN</div>
+                    <div class="bg-gray-100 p-2 font-medium text-center">T2</div>
+                    <div class="bg-gray-100 p-2 font-medium text-center">T3</div>
+                    <div class="bg-gray-100 p-2 font-medium text-center">T4</div>
+                    <div class="bg-gray-100 p-2 font-medium text-center">T5</div>
+                    <div class="bg-gray-100 p-2 font-medium text-center">T6</div>
+                    <div class="bg-gray-100 p-2 font-medium text-center">T7</div>
+                </div>
+                <div class="grid grid-cols-7 gap-1">
+                    <!-- Previous month days -->
+                    <div class="bg-gray-50 p-2 h-24 text-gray-400">28</div>
+                    <div class="bg-gray-50 p-2 h-24 text-gray-400">29</div>
+                    <div class="bg-gray-50 p-2 h-24 text-gray-400">30</div>
+                    <div class="bg-gray-50 p-2 h-24 text-gray-400">31</div>
+
+                    <!-- Current month days -->
+                    <div class="border p-2 h-24">
+                        <div class="text-right">1</div>
+                    </div>
+                    <div class="border p-2 h-24">
+                        <div class="text-right">2</div>
+                    </div>
+                    <div class="border p-2 h-24">
+                        <div class="text-right">3</div>
+                    </div>
+
+                    <!-- Week 2 -->
+                    <div class="border p-2 h-24">
+                        <div class="text-right">4</div>
+                    </div>
+                    <div class="border p-2 h-24">
+                        <div class="text-right">5</div>
+                        <div class="text-xs mt-1 truncate bg-blue-100 text-blue-800 p-1 rounded">Toán Cao Cấp</div>
+                    </div>
+                    <div class="border p-2 h-24">
+                        <div class="text-right">6</div>
+                        <div class="text-xs mt-1 truncate bg-yellow-100 text-yellow-800 p-1 rounded">Hóa Đại Cương</div>
+                    </div>
+                    <div class="border p-2 h-24">
+                        <div class="text-right">7</div>
+                    </div>
+
+                    <!-- Week 3 -->
+                    <div class="border p-2 h-24">
+                        <div class="text-right">8</div>
+                    </div>
+                    <div class="border p-2 h-24">
+                        <div class="text-right">9</div>
+                    </div>
+                    <div class="border p-2 h-24">
+                        <div class="text-right">10</div>
+                        <div class="text-xs mt-1 truncate bg-green-100 text-green-800 p-1 rounded">Vật Lý ĐC</div>
+                    </div>
+                    <div class="border p-2 h-24">
+                        <div class="text-right">11</div>
+                    </div>
+                    <div class="border p-2 h-24">
+                        <div class="text-right">12</div>
+                        <div class="text-xs mt-1 truncate bg-pink-100 text-pink-800 p-1 rounded">Sinh Học ĐC</div>
+                    </div>
+                    <div class="border p-2 h-24">
+                        <div class="text-right">13</div>
+                    </div>
+                    <div class="border p-2 h-24">
+                        <div class="text-right">14</div>
+                    </div>
+
+                    <!-- Week 4 -->
+                    <div class="border p-2 h-24">
+                        <div class="text-right">15</div>
+                    </div>
+                    <div class="border p-2 h-24">
+                        <div class="text-right">16</div>
+                        <div class="text-xs mt-1 truncate bg-purple-100 text-purple-800 p-1 rounded">Văn Học VN</div>
+                    </div>
+                    <div class="border p-2 h-24">
+                        <div class="text-right">17</div>
+                    </div>
+                    <div class="border p-2 h-24">
+                        <div class="text-right">18</div>
+                    </div>
+                    <div class="border p-2 h-24">
+                        <div class="text-right">19</div>
+                    </div>
+                    <div class="border p-2 h-24">
+                        <div class="text-right">20</div>
+                    </div>
+                    <div class="border p-2 h-24">
+                        <div class="text-right">21</div>
+                    </div>
+
+                    <!-- Week 5 -->
+                    <div class="border p-2 h-24">
+                        <div class="text-right">22</div>
+                    </div>
+                    <div class="border p-2 h-24">
+                        <div class="text-right">23</div>
+                    </div>
+                    <div class="border p-2 h-24">
+                        <div class="text-right">24</div>
+                    </div>
+                    <div class="border p-2 h-24">
+                        <div class="text-right">25</div>
+                    </div>
+                    <div class="border p-2 h-24">
+                        <div class="text-right">26</div>
+                    </div>
+                    <div class="border p-2 h-24">
+                        <div class="text-right">27</div>
+                    </div>
+                    <div class="border p-2 h-24">
+                        <div class="text-right">28</div>
+                    </div>
+
+                    <!-- Next month days -->
+                    <div class="bg-gray-50 p-2 h-24 text-gray-400">1</div>
+                    <div class="bg-gray-50 p-2 h-24 text-gray-400">2</div>
+                    <div class="bg-gray-50 p-2 h-24 text-gray-400">3</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upcoming Classes Section -->
+        <div class="bg-white rounded-lg shadow p-4 mb-6">
+            <h3 class="text-lg font-semibold mb-4">Lịch dạy sắp tới</h3>
+            <div class="space-y-3">
+                <div class="flex items-start p-3 border border-gray-200 rounded-lg">
+                    <div class="bg-blue-100 text-blue-800 p-2 rounded-lg mr-3 text-center min-w-16">
+                        <div class="font-bold">Th 5</div>
+                        <div class="text-sm">11/04</div>
+                    </div>
+                    <div class="flex-grow">
+                        <div class="font-medium">Văn Học Việt Nam</div>
+                        <div class="text-sm text-gray-600">13:00 - 15:00 | Phòng C1.101</div>
+                        <div class="text-sm">Lớp: CNTT1</div>
+                    </div>
+                    <div>
+                        <button onclick="openDetailModal(5)" class="text-blue-600 hover:text-blue-800 text-sm">Chi tiết</button>
+                    </div>
+                </div>
+
+                <div class="flex items-start p-3 border border-gray-200 rounded-lg">
+                    <div class="bg-green-100 text-green-800 p-2 rounded-lg mr-3 text-center min-w-16">
+                        <div class="font-bold">T4</div>
+                        <div class="text-sm">10/04</div>
+                    </div>
+                    <div class="flex-grow">
+                        <div class="font-medium">Vật Lý Đại Cương</div>
+                        <div class="text-sm text-gray-600">7:00 - 9:00 | Phòng A2.105</div>
+                        <div class="text-sm">Lớp: CNTT2</div>
+                    </div>
+                    <div>
+                        <button onclick="openDetailModal(2)" class="text-blue-600 hover:text-blue-800 text-sm">Chi tiết</button>
+                    </div>
+                </div>
+
+                <div class="flex items-start p-3 border border-gray-200 rounded-lg">
+                    <div class="bg-yellow-100 text-yellow-800 p-2 rounded-lg mr-3 text-center min-w-16">
+                        <div class="font-bold">T6</div>
+                        <div class="text-sm">12/04</div>
+                    </div>
+                    <div class="flex-grow">
+                        <div class="font-medium">Sinh Học Đại Cương</div>
+                        <div class="text-sm text-gray-600">9:00 - 11:00 | Phòng A1.205</div>
+                        <div class="text-sm">Lớp: CNTT3</div>
+                    </div>
+                    <div>
+                        <button onclick="openDetailModal(4)" class="text-blue-600 hover:text-blue-800 text-sm">Chi tiết</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Schedule Detail Modal -->
+    <div id="scheduleModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg w-full max-w-md modal-animation">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold" id="modal-title">Chi tiết lịch dạy</h3>
+                    <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Môn học</label>
+                        <p id="modal-subject" class="mt-1 text-sm text-gray-900 font-medium">Toán Cao Cấp</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Lớp</label>
+                        <p id="modal-class" class="mt-1 text-sm text-gray-900">CNTT1</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Thời gian</label>
+                        <p id="modal-time" class="mt-1 text-sm text-gray-900">Thứ 2, 7:00 - 9:00 (10/04/2024)</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Phòng học</label>
+                        <p id="modal-room" class="mt-1 text-sm text-gray-900">A1.201</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Trạng thái</label>
+                        <p id="modal-status" class="mt-1 text-sm">
+                            <span class="px-2 py-1 rounded bg-blue-100 text-blue-800">Đã xác nhận</span>
+                        </p>
+                    </div>
+
+                    <div id="modal-actions" class="pt-4 flex justify-end space-x-3">
+                        <button onclick="confirmSchedule()" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+                            <i class="fas fa-check mr-1"></i> Xác nhận
+                        </button>
+                        <button onclick="requestChange()" class="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600">
+                            <i class="fas fa-exchange-alt mr-1"></i> Yêu cầu đổi ca
+                        </button>
+                    </div>
+
+                    <div id="change-request-form" class="hidden pt-4 border-t">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Lý do đổi ca</label>
+                            <textarea class="w-full border border-gray-300 rounded p-2" rows="3" placeholder="Nhập lý do bạn muốn đổi ca..."></textarea>
+                        </div>
+                        <div class="flex justify-end space-x-3">
+                            <button onclick="cancelRequest()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">Hủy</button>
+                            <button onclick="submitRequest()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Gửi yêu cầu</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Shift Modal -->
+    <div id="addShiftModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg w-full max-w-md modal-animation">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold">Đề xuất dạy thêm</h3>
+                    <button onclick="closeAddShiftModal()" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Môn học</label>
+                        <select class="w-full border border-gray-300 rounded p-2">
+                            <option>Chọn môn học</option>
+                            <option>Toán Cao Cấp</option>
+                            <option>Vật Lý Đại Cương</option>
+                            <option>Hóa Học Đại Cương</option>
+                            <option>Sinh Học Đại Cương</option>
+                            <option>Văn Học Việt Nam</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Ngày</label>
+                        <input type="date" class="w-full border border-gray-300 rounded p-2">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Giờ bắt đầu</label>
+                            <select class="w-full border border-gray-300 rounded p-2">
+                                <option>7:00</option>
+                                <option>9:00</option>
+                                <option>13:00</option>
+                                <option>15:00</option>
+                                <option>18:00</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Giờ kết thúc</label>
+                            <select class="w-full border border-gray-300 rounded p-2">
+                                <option>9:00</option>
+                                <option>11:00</option>
+                                <option>15:00</option>
+                                <option>17:00</option>
+                                <option>20:00</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Phòng học mong muốn</label>
+                        <input type="text" class="w-full border border-gray-300 rounded p-2" placeholder="Ví dụ: A1.201">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Ghi chú</label>
+                        <textarea class="w-full border border-gray-300 rounded p-2" rows="3" placeholder="Nhập ghi chú nếu có..."></textarea>
+                    </div>
+
+                    <div class="pt-4 flex justify-end space-x-3">
+                        <button onclick="closeAddShiftModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">Hủy</button>
+                        <button onclick="submitNewShift()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Gửi đề xuất</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        © 2025 Hệ thống Quản lý Sinh viên. All rights reserved.
+    </footer>
+</div>
+<script>
+    function toggleLogoutDropdown() {
+        const dropdown = document.getElementById("logoutDropdown");
+        if (dropdown) {
+            dropdown.style.display = (dropdown.style.display === "block") ? "none" : "block";
+        }
+    }
+
+    function toggleSidebar() {
+        const sidebar = document.getElementById("sidebar");
+        if (sidebar) {
+            if (sidebar.style.display === "none" || sidebar.style.display === "") {
+                sidebar.style.display = "block";
+            } else {
+                sidebar.style.display = "none";
+            }
+            // Adjust main content margin when sidebar toggles
+            const mainContent = document.querySelector(".main-content");
+            const footer = document.querySelector("footer");
+            if (sidebar.style.display === "none") {
+                mainContent.style.marginLeft = "0";
+                footer.style.marginLeft = "0";
+            } else {
+                mainContent.style.marginLeft = "240px";
+                footer.style.marginLeft = "240px";
+            }
+        }
+    }
+
+    document.addEventListener("click", function (event) {
+        const userInfo = document.querySelector(".user-info");
+        const dropdown = document.getElementById("logoutDropdown");
+        const sidebar = document.getElementById("sidebar");
+        const toggle = document.querySelector(".menu-toggle");
+
+        if (dropdown && userInfo && !userInfo.contains(event.target)) {
+            dropdown.style.display = "none";
+        }
+
+        // Only close sidebar if clicking outside and it's visible
+        if (sidebar && sidebar.style.display !== "none" &&
+            !sidebar.contains(event.target) &&
+            !toggle.contains(event.target)) {
+            sidebar.style.display = "none";
+            document.querySelector(".main-content").style.marginLeft = "0";
+            document.querySelector("footer").style.marginLeft = "0";
+        }
+    });
+
+    // Sample data for schedules
+    const schedules = {
+        1: {
+            subject: "Toán Cao Cấp",
+            class: "CNTT1",
+            time: "Thứ 2, 7:00 - 9:00 (10/04/2024)",
+            room: "A1.201",
+            status: "Đã xác nhận",
+            statusClass: "bg-blue-100 text-blue-800",
+            canConfirm: false,
+            canRequestChange: true
+        },
+        2: {
+            subject: "Vật Lý Đại Cương",
+            class: "CNTT2",
+            time: "Thứ 4, 7:00 - 9:00 (10/04/2024)",
+            room: "A2.105",
+            status: "Chờ xác nhận",
+            statusClass: "bg-yellow-100 text-yellow-800",
+            canConfirm: true,
+            canRequestChange: true
+        },
+        3: {
+            subject: "Hóa Học Đại Cương",
+            class: "CNTT1",
+            time: "Thứ 3, 9:00 - 11:00 (09/04/2024)",
+            room: "B1.302",
+            status: "Đã xác nhận",
+            statusClass: "bg-blue-100 text-blue-800",
+            canConfirm: false,
+            canRequestChange: true
+        },
+        4: {
+            subject: "Sinh Học Đại Cương",
+            class: "CNTT3",
+            time: "Thứ 6, 9:00 - 11:00 (12/04/2024)",
+            room: "A1.205",
+            status: "Đã xác nhận",
+            statusClass: "bg-blue-100 text-blue-800",
+            canConfirm: false,
+            canRequestChange: true
+        },
+        5: {
+            subject: "Văn Học Việt Nam",
+            class: "CNTT1",
+            time: "Thứ 5, 13:00 - 15:00 (11/04/2024)",
+            room: "C1.101",
+            status: "Yêu cầu đổi ca",
+            statusClass: "bg-red-100 text-red-800",
+            canConfirm: false,
+            canRequestChange: false
+        }
+    };
+
+    // Modal functions
+    function openDetailModal(id) {
+        const schedule = schedules[id];
+        document.getElementById('modal-title').textContent = `Chi tiết lịch dạy - ${schedule.subject}`;
+        document.getElementById('modal-subject').textContent = schedule.subject;
+        document.getElementById('modal-class').textContent = schedule.class;
+        document.getElementById('modal-time').textContent = schedule.time;
+        document.getElementById('modal-room').textContent = schedule.room;
+
+        const statusElement = document.getElementById('modal-status');
+        statusElement.innerHTML = `<span class="px-2 py-1 rounded ${schedule.statusClass}">${schedule.status}</span>`;
+
+        const actionsElement = document.getElementById('modal-actions');
+        if (schedule.canConfirm || schedule.canRequestChange) {
+            actionsElement.classList.remove('hidden');
+
+            const confirmBtn = actionsElement.querySelector('button:first-child');
+            const requestBtn = actionsElement.querySelector('button:last-child');
+
+            confirmBtn.classList.toggle('hidden', !schedule.canConfirm);
+            requestBtn.classList.toggle('hidden', !schedule.canRequestChange);
+        } else {
+            actionsElement.classList.add('hidden');
+        }
+
+        document.getElementById('change-request-form').classList.add('hidden');
+        document.getElementById('scheduleModal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+        document.getElementById('scheduleModal').classList.add('hidden');
+    }
+
+    function confirmSchedule() {
+        alert('Lịch dạy đã được xác nhận thành công!');
+        closeModal();
+    }
+
+    function requestChange() {
+        document.getElementById('modal-actions').classList.add('hidden');
+        document.getElementById('change-request-form').classList.remove('hidden');
+    }
+
+    function cancelRequest() {
+        document.getElementById('change-request-form').classList.add('hidden');
+        document.getElementById('modal-actions').classList.remove('hidden');
+    }
+
+    function submitRequest() {
+        alert('Yêu cầu đổi ca đã được gửi thành công!');
+        closeModal();
+    }
+
+    // Add shift modal functions
+    function openAddShiftModal() {
+        document.getElementById('addShiftModal').classList.remove('hidden');
+    }
+
+    function closeAddShiftModal() {
+        document.getElementById('addShiftModal').classList.add('hidden');
+    }
+
+    function submitNewShift() {
+        alert('Đề xuất dạy thêm đã được gửi thành công!');
+        closeAddShiftModal();
+    }
+
+    // Calendar view functions
+    function showWeekView() {
+        document.getElementById('week-view').classList.remove('hidden');
+        document.getElementById('month-view').classList.add('hidden');
+    }
+
+    function showMonthView() {
+        document.getElementById('week-view').classList.add('hidden');
+        document.getElementById('month-view').classList.remove('hidden');
+    }
+
+    function changeWeek(offset) {
+        // In a real app, this would fetch new week data
+        const weekText = document.getElementById('current-week');
+        const currentWeek = parseInt(weekText.textContent.match(/Tuần (\d+)/)[1]);
+        const newWeek = currentWeek + offset;
+        weekText.textContent = `Tuần ${newWeek} (${10 + offset}/04 - ${16 + offset}/04)`;
+    }
+
+    function printSchedule() {
+        window.print();
+    }
+
+    // Close modals when clicking outside
+    document.addEventListener('click', function(event) {
+        const scheduleModal = document.getElementById('scheduleModal');
+        const addShiftModal = document.getElementById('addShiftModal');
+
+        if (event.target === scheduleModal) {
+            closeModal();
+        }
+
+        if (event.target === addShiftModal) {
+            closeAddShiftModal();
+        }
+    });
+
+    // Initialize week view by default
+    showWeekView();
+
+</script>
+<script src="https://cdn.tailwindcss.com"></script>
+
+</body>
+</html>
