@@ -79,15 +79,15 @@ public class ClassServiceImpl implements IClassService {
         if (classEntity == null) {
             throw new RuntimeException("Không tìm thấy lớp học với ID: " + id);
         }
-
+        
         // Xóa các bản ghi liên quan trước khi xóa lớp học
-
+        
         // 1. Xóa các bản ghi trong bảng class_subject
         List<ClassSubject> classSubjects = classSubjectRepository.findByClassEntityId(id);
         if (classSubjects != null && !classSubjects.isEmpty()) {
             classSubjectRepository.deleteAll(classSubjects);
         }
-
+        
         // 2. Xóa các bản ghi trong bảng schedules
         List<Schedule> schedules = scheduleRepository.findByClassId(id);
         if (schedules != null && !schedules.isEmpty()) {
@@ -212,11 +212,4 @@ public class ClassServiceImpl implements IClassService {
     public List<Class> findClassesByTeacherId(Long teacherId) {
         return classRepository.findClassesByTeacherId(teacherId);
     }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<Class> findRecentClassesForStudentWithFetch(Long studentId) {
-        return classRepository.findRecentByStudentIdWithFetch(studentId);
-    }
-
 }

@@ -6,247 +6,9 @@
     <title>Cổng Sinh Viên</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
+    <link rel="stylesheet" th:href="@{/student/student-panel.css}">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </head>
-<style>
-    /* ==== Global Reset and Base Styling ==== */
-    html, body {
-        height: 100%;
-        margin: 0;
-        padding: 0;
-        font-family: 'Segoe UI', sans-serif;
-        background: #f9f9f9;
-    }
-
-    .wrapper {
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-    }
-
-    /* ==== Header ==== */
-    header {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 60px;
-        background: #fff;
-        color: #111;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0 24px;
-        z-index: 1000;
-        border-bottom: 1px solid #e0e0e0;
-    }
-
-    .menu-toggle {
-        cursor: pointer !important;
-        font-size: 18px !important;
-        padding: 8px !important;
-        border-radius: 4px !important;
-        transition: all 0.2s ease !important;
-        z-index: 1001 !important;
-        position: relative !important;
-    }
-
-    .menu-toggle:hover {
-        background-color: #f0f0f0 !important;
-    }
-
-    .menu-toggle i {
-        pointer-events: none !important;
-    }
-
-    /* User Info */
-    .user-info {
-        position: relative;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .user-info i {
-        font-size: 18px;
-        color: #333;
-    }
-
-    /* Logout Dropdown */
-    .logout-dropdown {
-        display: none;
-        position: absolute;
-        top: 100%;
-        right: 0;
-        background: white;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        z-index: 1000;
-        min-width: 120px;
-        margin-top: 5px;
-    }
-
-    .logout-dropdown button {
-        border: none;
-        background: none;
-        width: 100%;
-        padding: 8px 12px;
-        text-align: left;
-        cursor: pointer;
-        transition: background-color 0.2s;
-    }
-
-    .logout-dropdown button:hover {
-        background-color: #f8f9fa;
-    }
-
-    /* ==== Sidebar ==== */
-    .student-sidebar {
-        background: #111 !important;
-        color: white !important;
-        width: 240px !important;
-        height: 100vh !important;
-        padding: 90px 20px 30px !important;
-        position: fixed !important;
-        top: 0 !important;
-        left: 0 !important;
-        overflow-y: auto !important;
-        z-index: 999 !important;
-        display: none !important;
-        transition: all 0.3s ease !important;
-    }
-
-    .student-sidebar.show {
-        display: block !important;
-    }
-
-    .student-sidebar h4 {
-        font-size: 16px !important;
-        margin-bottom: 24px !important;
-        color: #bbb !important;
-        letter-spacing: 0.5px !important;
-    }
-
-    .student-sidebar a {
-        display: block !important;
-        color: white !important;
-        text-decoration: none !important;
-        margin-bottom: 12px !important;
-        font-size: 15px !important;
-        padding: 10px 16px !important;
-        border-radius: 8px !important;
-        transition: all 0.2s ease !important;
-    }
-
-    .student-sidebar a:hover {
-        background-color: #f1f1f1 !important;
-        color: #111;
-        transform: translateX(4px);
-    }
-
-    /* ==== Main Content ==== */
-    .main-content {
-        margin-left: 0 !important;
-        padding: 100px 40px 40px !important;
-        flex-grow: 1 !important;
-        background: #f9f9f9 !important;
-        transition: margin-left 0.3s ease !important;
-    }
-
-    .student-sidebar.show ~ .main-content {
-        margin-left: 240px !important;
-    }
-
-    .main-content h2 {
-        margin-bottom: 30px;
-        color: #111;
-    }
-
-    /* Grid */
-
-
-    .grid-container {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-        gap: 24px;
-    }
-
-
-    .card {
-        background: #fff;
-        border-radius: 12px;
-        padding: 24px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.04);
-        border: 1px solid #e5e5e5;
-        transition: all 0.2s ease;
-    }
-
-    .card:hover {
-        box-shadow: 0 6px 14px rgba(0,0,0,0.08);
-        transform: translateY(-4px);
-    }
-
-    .card h5 {
-        font-size: 16px;
-        font-weight: 600;
-        color: #111;
-        margin-bottom: 8px;
-    }
-
-    .card p {
-        font-size: 14px;
-        color: #555;
-    }
-
-    /* ===== ADDITIONAL CARD STYLES ===== */
-    .hover-card {
-        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-    }
-
-    .hover-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
-    }
-
-    .feature-icon {
-        width: 80px;
-        height: 80px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .border-left-primary {
-        border-left: 4px solid #007bff !important;
-    }
-
-    /* ==== Footer ==== */
-    footer {
-        background: #fff;
-        color: #888;
-        text-align: center;
-        padding: 12px 20px;
-        font-size: 13px;
-        border-top: 1px solid #e0e0e0;
-        margin-top: auto;
-    }
-
-    @media (min-width: 769px) {
-        .sidebar.show ~ .main-content + footer {
-            margin-left: 240px;
-        }
-    }
-
-    @media (max-width: 768px) {
-        .main-content {
-            padding: 100px 20px 40px;
-        }
-    }
-
-</style>
 <body>
 <div class="wrapper">
 
@@ -256,25 +18,33 @@
         </div>
         <div class="user-info">
             <i class="fas fa-user me-2" onclick="toggleLogoutDropdown()"></i>
-
+            <span>Hi, <span th:text="${student != null ? student.fullName : 'Sinh viên'}">Sinh viên</span></span>
             <div id="logoutDropdown" class="logout-dropdown">
                 <form th:action="@{/logout}" method="post">
                     <button type="submit" class="btn btn-sm btn-outline-danger w-100">Đăng xuất</button>
                 </form>
             </div>
         </div>
+        
+        <!-- Debug info in header -->
+        <div style="position: absolute; top: 60px; right: 20px; background: yellow; padding: 10px; border: 1px solid red; z-index: 1001;">
+            <strong>DEBUG:</strong><br>
+            Student: <span th:text="${student != null ? student.fullName : 'null'}">null</span><br>
+            Total Classes: <span th:text="${totalClasses != null ? totalClasses : 'null'}">null</span><br>
+            Recent Classes: <span th:text="${recentClasses != null ? recentClasses.size() : 'null'}">null</span><br>
+            Error: <span th:text="${error != null ? error : 'none'}">none</span>
+        </div>
     </header>
 
-    <div class="student-sidebar" id="studentSidebar">
-        <a th:href="@{/student/panel}" class="sidebar-link home-link">
-            <i class="bi bi-house-door-fill"></i>Trang chủ
+    <div class="sidebar" id="sidebar">
+        <a th:href="@{/student/dashboard}" class="sidebar-link home-link active">
+            <i class="fas fa-home me-2"></i>Trang chủ
         </a>
         <a th:href="@{/student/profile}"><i class="fas fa-user me-2"></i>Tài khoản cá nhân</a>
         <a th:href="@{/student/classes}"><i class="fas fa-chalkboard me-2"></i>Lớp học của tôi</a>
         <a th:href="@{/student/grades}"><i class="fas fa-graduation-cap me-2"></i>Điểm số</a>
-        <a th:href="@{/student/..}"><i class="fas fa-calendar-alt me-2"></i>Lịch học </a>
+        <a href="#" onclick="showComingSoon('Lịch học')" class="text-muted"><i class="fas fa-calendar-alt me-2"></i>Lịch học <span class="badge bg-danger ms-1 small">Sắp có</span></a>
     </div>
-
     <div class="main-content">
         <div class="container">
             <h2 class="mb-4">
@@ -292,7 +62,7 @@
                 <span th:text="${error}"></span>
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
-
+            
 
             <!-- Thống kê nhanh -->
             <div class="row mb-4">
@@ -467,28 +237,23 @@
                                 </a>
                             </div>
 
-                            <!--                            cái cũ dùng property không tồn tại trong entity Class-->
-                            <!-- Lớp học gần đây -->
                             <div th:if="${recentClasses != null and !#lists.isEmpty(recentClasses)}" class="row">
-                                <div th:each="clazz : ${recentClasses}" class="col-md-4 mb-3">
-                                    <div class="card">
+                                <div th:each="class : ${recentClasses}" class="col-md-4 mb-3">
+                                    <div class="card border-left-primary">
                                         <div class="card-body">
-                                            <h6 class="card-title" th:text="${clazz.name}">Tên lớp</h6>
-                                            <p class="text-muted" th:text="${clazz.description != null ? clazz.description : 'Chưa có mô tả'}">—</p>
-
-                                            <p class="mb-0">
-                                                <i class="fas fa-users me-1"></i>
-                                                <span th:text="${#lists.size(clazz.students)}">0</span> học viên
+                                            <h6 class="card-title text-primary" th:text="${class != null ? class.name : 'Tên lớp'}">Tên lớp</h6>
+                                            <p class="card-text mb-1">
+                                                <i class="fas fa-book me-1"></i>
+                                                <span th:text="${class != null and class.subject != null ? class.subject.name : 'Chưa xác định'}">Môn học</span>
                                             </p>
-                                            <p class="mb-0">
-                                                <i class="fas fa-chalkboard-teacher me-1"></i>
-                                                <span th:text="${#lists.size(clazz.teachers)}">0</span> giảng viên
+                                            <p class="card-text mb-0">
+                                                <i class="fas fa-clock me-1"></i>
+                                                <span th:text="${class != null ? class.schedule : 'Chưa có lịch'}">Lịch học</span>
                                             </p>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-
                         </div>
                     </div>
                 </div>
@@ -502,10 +267,10 @@
 </div>
 
 <script>
-    // Student Panel Namespace để tránh conflict
-    window.StudentPanel = window.StudentPanel || {};
-
+    console.log("Student panel script loaded");
+    
     function toggleLogoutDropdown() {
+        console.log("Toggle logout dropdown called");
         const dropdown = document.getElementById("logoutDropdown");
         if (dropdown) {
             dropdown.style.display = (dropdown.style.display === "block") ? "none" : "block";
@@ -513,39 +278,38 @@
     }
 
     function toggleSidebar() {
-        const sidebar = document.getElementById("studentSidebar");
+        console.log("Toggle sidebar called");
+        const sidebar = document.getElementById("sidebar");
         if (sidebar) {
             sidebar.classList.toggle("show");
         }
     }
 
+    function showComingSoon(feature) {
+        alert("Chức năng '" + feature + "' hiện đang được phát triển. Vui lòng quay lại sau.");
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        console.log("DOM loaded for student panel");
+        console.log("Student data:", {
+            student: document.querySelector('[th\\:text*="student.fullName"]')?.textContent,
+            totalClasses: document.querySelector('[th\\:text*="totalClasses"]')?.textContent,
+            recentClasses: document.querySelectorAll('[th\\:each="class : ${recentClasses}"]').length
+        });
+    });
+
     document.addEventListener("click", function (event) {
         const userInfo = document.querySelector(".user-info");
         const dropdown = document.getElementById("logoutDropdown");
         const sidebar = document.getElementById("sidebar");
-        const menuToggle = document.querySelector(".menu-toggle");
+        const toggle = document.querySelector(".menu-toggle");
 
         if (dropdown && userInfo && !userInfo.contains(event.target)) {
             dropdown.style.display = "none";
         }
 
-        if (sidebar && !sidebar.contains(event.target) && event.target !== menuToggle && !menuToggle.contains(event.target)) {
+        if (sidebar && !sidebar.contains(event.target) && !toggle.contains(event.target)) {
             sidebar.classList.remove("show");
-        }
-    });
-
-    document.addEventListener("DOMContentLoaded", function() {
-        console.log('Student Panel DOM loaded'); // Debug
-
-        // Alternative click handler for menu toggle
-        const menuToggle = document.querySelector('.menu-toggle');
-        if (menuToggle) {
-            menuToggle.addEventListener('click', function (e) {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('Menu toggle clicked via event listener'); // Debug
-                StudentPanel.toggleSidebar();
-            });
         }
     });
 </script>

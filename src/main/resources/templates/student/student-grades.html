@@ -9,244 +9,6 @@
     <link rel="stylesheet" th:href="@{/student/student-panel.css}">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </head>
-<style>
-    /* ==== Global Reset and Base Styling ==== */
-    html, body {
-        height: 100%;
-        margin: 0;
-        padding: 0;
-        font-family: 'Segoe UI', sans-serif;
-        background: #f9f9f9;
-    }
-
-    .wrapper {
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-    }
-
-    /* ==== Header ==== */
-    header {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 60px;
-        background: #fff;
-        color: #111;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0 24px;
-        z-index: 1000;
-        border-bottom: 1px solid #e0e0e0;
-    }
-
-    .menu-toggle {
-        cursor: pointer !important;
-        font-size: 18px !important;
-        padding: 8px !important;
-        border-radius: 4px !important;
-        transition: all 0.2s ease !important;
-        z-index: 1001 !important;
-        position: relative !important;
-    }
-
-    .menu-toggle:hover {
-        background-color: #f0f0f0 !important;
-    }
-
-    .menu-toggle i {
-        pointer-events: none !important;
-    }
-
-    /* User Info */
-    .user-info {
-        position: relative;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .user-info i {
-        font-size: 18px;
-        color: #333;
-    }
-
-    /* Logout Dropdown */
-    .logout-dropdown {
-        display: none;
-        position: absolute;
-        top: 100%;
-        right: 0;
-        background: white;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        z-index: 1000;
-        min-width: 120px;
-        margin-top: 5px;
-    }
-
-    .logout-dropdown button {
-        border: none;
-        background: none;
-        width: 100%;
-        padding: 8px 12px;
-        text-align: left;
-        cursor: pointer;
-        transition: background-color 0.2s;
-    }
-
-    .logout-dropdown button:hover {
-        background-color: #f8f9fa;
-    }
-
-    /* ==== Sidebar ==== */
-    .student-sidebar {
-        background: #111 !important;
-        color: white !important;
-        width: 240px !important;
-        height: 100vh !important;
-        padding: 90px 20px 30px !important;
-        position: fixed !important;
-        top: 0 !important;
-        left: 0 !important;
-        overflow-y: auto !important;
-        z-index: 999 !important;
-        display: none !important;
-        transition: all 0.3s ease !important;
-    }
-
-    .student-sidebar.show {
-        display: block !important;
-    }
-
-    .student-sidebar h4 {
-        font-size: 16px !important;
-        margin-bottom: 24px !important;
-        color: #bbb !important;
-        letter-spacing: 0.5px !important;
-    }
-
-    .student-sidebar a {
-        display: block !important;
-        color: white !important;
-        text-decoration: none !important;
-        margin-bottom: 12px !important;
-        font-size: 15px !important;
-        padding: 10px 16px !important;
-        border-radius: 8px !important;
-        transition: all 0.2s ease !important;
-    }
-
-    .student-sidebar a:hover {
-        background-color: #f1f1f1 !important;
-        color: #111;
-        transform: translateX(4px);
-    }
-
-    /* ==== Main Content ==== */
-    .main-content {
-        margin-left: 0 !important;
-        padding: 100px 40px 40px !important;
-        flex-grow: 1 !important;
-        background: #f9f9f9 !important;
-        transition: margin-left 0.3s ease !important;
-    }
-
-    .student-sidebar.show ~ .main-content,
-    .main-content.sidebar-shifted {
-        margin-left: 240px !important;
-    }
-
-    .main-content h2 {
-        margin-bottom: 30px;
-        color: #111;
-    }
-
-    /* Grid */
-
-
-    .grid-container {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-        gap: 24px;
-    }
-
-
-    .card {
-        background: #fff;
-        border-radius: 12px;
-        padding: 24px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.04);
-        border: 1px solid #e5e5e5;
-        transition: all 0.2s ease;
-    }
-
-    .card:hover {
-        box-shadow: 0 6px 14px rgba(0,0,0,0.08);
-        transform: translateY(-4px);
-    }
-
-    .card h5 {
-        font-size: 16px;
-        font-weight: 600;
-        color: #111;
-        margin-bottom: 8px;
-    }
-
-    .card p {
-        font-size: 14px;
-        color: #555;
-    }
-
-    /* ===== ADDITIONAL CARD STYLES ===== */
-    .hover-card {
-        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-    }
-
-    .hover-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
-    }
-
-    .feature-icon {
-        width: 80px;
-        height: 80px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .border-left-primary {
-        border-left: 4px solid #007bff !important;
-    }
-
-    /* ==== Footer ==== */
-    footer {
-        background: #fff;
-        color: #888;
-        text-align: center;
-        padding: 12px 20px;
-        font-size: 13px;
-        border-top: 1px solid #e0e0e0;
-        margin-top: auto;
-    }
-
-    @media (min-width: 769px) {
-        .sidebar.show ~ .main-content + footer {
-            margin-left: 240px;
-        }
-    }
-
-    @media (max-width: 768px) {
-        .main-content {
-            padding: 100px 20px 40px;
-        }
-    }
-</style>
 <body>
 <div class="wrapper">
     <header>
@@ -264,14 +26,14 @@
         </div>
     </header>
 
-    <div class="student-sidebar" id="studentSidebar">
+    <div class="sidebar" id="sidebar">
         <a th:href="@{/student/dashboard}" class="sidebar-link home-link">
             <i class="fas fa-home me-2"></i>Trang chủ
         </a>
         <a th:href="@{/student/profile}"><i class="fas fa-user me-2"></i>Tài khoản cá nhân</a>
         <a th:href="@{/student/classes}"><i class="fas fa-chalkboard me-2"></i>Lớp học của tôi</a>
         <a th:href="@{/student/grades}" class="active"><i class="fas fa-graduation-cap me-2"></i>Điểm số</a>
-        <a href="#" ><i class="fas fa-calendar-alt me-2"></i>Lịch học </a>
+        <a href="#" onclick="showComingSoon('Lịch học')" class="text-muted"><i class="fas fa-calendar-alt me-2"></i>Lịch học <span class="badge bg-danger ms-1 small">Sắp có</span></a>
     </div>
 
     <div class="main-content">
@@ -407,89 +169,89 @@
                     <div class="table-responsive">
                         <table class="table table-striped table-hover">
                             <thead class="table-dark">
-                            <tr>
-                                <th>STT</th>
-                                <th>Môn học</th>
-                                <th>Tín chỉ</th>
-                                <th>Chuyên cần</th>
-                                <th>Giữa kỳ</th>
-                                <th>Cuối kỳ</th>
-                                <th>Điểm TB (10)</th>
-                                <th>Điểm TB (4)</th>
-                                <th>Xếp loại</th>
-                                <th>Trạng thái</th>
-                            </tr>
+                                <tr>
+                                    <th>STT</th>
+                                    <th>Môn học</th>
+                                    <th>Tín chỉ</th>
+                                    <th>Chuyên cần</th>
+                                    <th>Giữa kỳ</th>
+                                    <th>Cuối kỳ</th>
+                                    <th>Điểm TB (10)</th>
+                                    <th>Điểm TB (4)</th>
+                                    <th>Xếp loại</th>
+                                    <th>Trạng thái</th>
+                                </tr>
                             </thead>
                             <tbody id="gradesTableBody">
-                            <!-- Dữ liệu mẫu -->
-                            <tr>
-                                <td>1</td>
-                                <td>
-                                    <div>
-                                        <strong>Lập trình Java</strong><br>
-                                        <small class="text-muted">Học kỳ 2 (2024-2025)</small>
-                                    </div>
-                                </td>
-                                <td><span class="badge bg-info">3</span></td>
-                                <td>9.5</td>
-                                <td>8.5</td>
-                                <td>9.0</td>
-                                <td><strong class="text-success">8.8</strong></td>
-                                <td><strong class="text-success">3.5</strong></td>
-                                <td><span class="badge bg-success">Giỏi</span></td>
-                                <td><span class="badge bg-success">Qua môn</span></td>
-                            </tr>
-                            <tr>
-                                <td>2</td>
-                                <td>
-                                    <div>
-                                        <strong>Spring Framework</strong><br>
-                                        <small class="text-muted">Học kỳ 2 (2024-2025)</small>
-                                    </div>
-                                </td>
-                                <td><span class="badge bg-info">4</span></td>
-                                <td>8.0</td>
-                                <td>7.5</td>
-                                <td>8.5</td>
-                                <td><strong class="text-primary">8.1</strong></td>
-                                <td><strong class="text-primary">3.2</strong></td>
-                                <td><span class="badge bg-primary">Khá</span></td>
-                                <td><span class="badge bg-success">Qua môn</span></td>
-                            </tr>
-                            <tr>
-                                <td>3</td>
-                                <td>
-                                    <div>
-                                        <strong>Cơ sở dữ liệu</strong><br>
-                                        <small class="text-muted">Học kỳ 2 (2024-2025)</small>
-                                    </div>
-                                </td>
-                                <td><span class="badge bg-info">3</span></td>
-                                <td>9.0</td>
-                                <td>-</td>
-                                <td>-</td>
-                                <td><span class="text-muted">Đang học</span></td>
-                                <td><span class="text-muted">-</span></td>
-                                <td><span class="badge bg-secondary">Chưa có</span></td>
-                                <td><span class="badge bg-warning">Đang học</span></td>
-                            </tr>
-                            <tr>
-                                <td>4</td>
-                                <td>
-                                    <div>
-                                        <strong>Toán cao cấp A1</strong><br>
-                                        <small class="text-muted">Học kỳ 1 (2024-2025)</small>
-                                    </div>
-                                </td>
-                                <td><span class="badge bg-info">3</span></td>
-                                <td>6.0</td>
-                                <td>5.5</td>
-                                <td>4.5</td>
-                                <td><strong class="text-danger">5.1</strong></td>
-                                <td><strong class="text-danger">1.0</strong></td>
-                                <td><span class="badge bg-danger">Yếu</span></td>
-                                <td><span class="badge bg-danger">Không qua môn</span></td>
-                            </tr>
+                                <!-- Dữ liệu mẫu -->
+                                <tr>
+                                    <td>1</td>
+                                    <td>
+                                        <div>
+                                            <strong>Lập trình Java</strong><br>
+                                            <small class="text-muted">Học kỳ 2 (2024-2025)</small>
+                                        </div>
+                                    </td>
+                                    <td><span class="badge bg-info">3</span></td>
+                                    <td>9.5</td>
+                                    <td>8.5</td>
+                                    <td>9.0</td>
+                                    <td><strong class="text-success">8.8</strong></td>
+                                    <td><strong class="text-success">3.5</strong></td>
+                                    <td><span class="badge bg-success">Giỏi</span></td>
+                                    <td><span class="badge bg-success">Qua môn</span></td>
+                                </tr>
+                                <tr>
+                                    <td>2</td>
+                                    <td>
+                                        <div>
+                                            <strong>Spring Framework</strong><br>
+                                            <small class="text-muted">Học kỳ 2 (2024-2025)</small>
+                                        </div>
+                                    </td>
+                                    <td><span class="badge bg-info">4</span></td>
+                                    <td>8.0</td>
+                                    <td>7.5</td>
+                                    <td>8.5</td>
+                                    <td><strong class="text-primary">8.1</strong></td>
+                                    <td><strong class="text-primary">3.2</strong></td>
+                                    <td><span class="badge bg-primary">Khá</span></td>
+                                    <td><span class="badge bg-success">Qua môn</span></td>
+                                </tr>
+                                <tr>
+                                    <td>3</td>
+                                    <td>
+                                        <div>
+                                            <strong>Cơ sở dữ liệu</strong><br>
+                                            <small class="text-muted">Học kỳ 2 (2024-2025)</small>
+                                        </div>
+                                    </td>
+                                    <td><span class="badge bg-info">3</span></td>
+                                    <td>9.0</td>
+                                    <td>-</td>
+                                    <td>-</td>
+                                    <td><span class="text-muted">Đang học</span></td>
+                                    <td><span class="text-muted">-</span></td>
+                                    <td><span class="badge bg-secondary">Chưa có</span></td>
+                                    <td><span class="badge bg-warning">Đang học</span></td>
+                                </tr>
+                                <tr>
+                                    <td>4</td>
+                                    <td>
+                                        <div>
+                                            <strong>Toán cao cấp A1</strong><br>
+                                            <small class="text-muted">Học kỳ 1 (2024-2025)</small>
+                                        </div>
+                                    </td>
+                                    <td><span class="badge bg-info">3</span></td>
+                                    <td>6.0</td>
+                                    <td>5.5</td>
+                                    <td>4.5</td>
+                                    <td><strong class="text-danger">5.1</strong></td>
+                                    <td><strong class="text-danger">1.0</strong></td>
+                                    <td><span class="badge bg-danger">Yếu</span></td>
+                                    <td><span class="badge bg-danger">Không qua môn</span></td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -564,8 +326,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    window.StudentPanel = window.StudentPanel || {};
-
     function toggleLogoutDropdown() {
         const dropdown = document.getElementById("logoutDropdown");
         if (dropdown) {
@@ -574,51 +334,11 @@
     }
 
     function toggleSidebar() {
-        const sidebar = document.getElementById("studentSidebar");
+        const sidebar = document.getElementById("sidebar");
         if (sidebar) {
             sidebar.classList.toggle("show");
-            // Đồng bộ với main content
-            const mainContent = document.querySelector('.main-content');
-            if (mainContent) {
-                mainContent.classList.toggle('sidebar-shifted');
-            }
         }
     }
-
-    document.addEventListener("click", function (event) {
-        const userInfo = document.querySelector(".user-info");
-        const dropdown = document.getElementById("logoutDropdown");
-        const sidebar = document.getElementById("sidebar");
-        const menuToggle = document.querySelector(".menu-toggle");
-
-        if (dropdown && userInfo && !userInfo.contains(event.target)) {
-            dropdown.style.display = "none";
-        }
-
-        if (sidebar && !sidebar.contains(event.target) && event.target !== menuToggle && !menuToggle.contains(event.target)) {
-            sidebar.classList.remove("show");
-            // Đồng bộ với main content
-            const mainContent = document.querySelector('.main-content');
-            if (mainContent) {
-                mainContent.classList.remove('sidebar-shifted');
-            }
-        }
-    });
-
-    document.addEventListener("DOMContentLoaded", function() {
-        console.log('Student Panel DOM loaded'); // Debug
-
-        // Alternative click handler for menu toggle
-        const menuToggle = document.querySelector('.menu-toggle');
-        if (menuToggle) {
-            menuToggle.addEventListener('click', function (e) {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('Menu toggle clicked via event listener'); // Debug
-                StudentPanel.toggleSidebar();
-            });
-        }
-    });
 
     function filterGrades() {
         const semester = document.getElementById('semesterFilter').value;
@@ -672,7 +392,24 @@
         });
     });
 
+    document.addEventListener("click", function (event) {
+        const userInfo = document.querySelector(".user-info");
+        const dropdown = document.getElementById("logoutDropdown");
+        const sidebar = document.getElementById("sidebar");
+        const toggle = document.querySelector(".menu-toggle");
 
+        if (dropdown && userInfo && !userInfo.contains(event.target)) {
+            dropdown.style.display = "none";
+        }
+
+        if (sidebar && !sidebar.contains(event.target) && !toggle.contains(event.target)) {
+            sidebar.classList.remove("show");
+        }
+    });
+
+    function showComingSoon(feature) {
+        alert("Chức năng '" + feature + "' hiện đang được phát triển. Vui lòng quay lại sau.");
+    }
 </script>
 </body>
 </html>

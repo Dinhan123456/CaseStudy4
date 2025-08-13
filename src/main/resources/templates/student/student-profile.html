@@ -9,269 +9,31 @@
     <link rel="stylesheet" th:href="@{/student/student-panel.css}">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </head>
-<style>
-    /* ==== Global Reset and Base Styling ==== */
-    html, body {
-        height: 100%;
-        margin: 0;
-        padding: 0;
-        font-family: 'Segoe UI', sans-serif;
-        background: #f9f9f9;
-    }
-
-    .wrapper {
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-    }
-
-    /* ==== Header ==== */
-    header {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 60px;
-        background: #fff;
-        color: #111;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0 24px;
-        z-index: 1000;
-        border-bottom: 1px solid #e0e0e0;
-    }
-
-    .menu-toggle {
-        cursor: pointer !important;
-        font-size: 18px !important;
-        padding: 8px !important;
-        border-radius: 4px !important;
-        transition: all 0.2s ease !important;
-        z-index: 1001 !important;
-        position: relative !important;
-    }
-
-    .menu-toggle:hover {
-        background-color: #f0f0f0 !important;
-    }
-
-    .menu-toggle i {
-        pointer-events: none !important;
-    }
-
-    /* User Info */
-    .user-info {
-        position: relative;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .user-info i {
-        font-size: 18px;
-        color: #333;
-    }
-
-    /* Logout Dropdown */
-    .logout-dropdown {
-        display: none;
-        position: absolute;
-        top: 100%;
-        right: 0;
-        background: white;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        z-index: 1000;
-        min-width: 120px;
-        margin-top: 5px;
-    }
-
-    .logout-dropdown button {
-        border: none;
-        background: none;
-        width: 100%;
-        padding: 8px 12px;
-        text-align: left;
-        cursor: pointer;
-        transition: background-color 0.2s;
-    }
-
-    .logout-dropdown button:hover {
-        background-color: #f8f9fa;
-    }
-
-    /* ==== Sidebar ==== */
-    .student-sidebar {
-        background: #111 !important;
-        color: white !important;
-        width: 240px !important;
-        height: 100vh !important;
-        padding: 90px 20px 30px !important;
-        position: fixed !important;
-        top: 0 !important;
-        left: 0 !important;
-        overflow-y: auto !important;
-        z-index: 999 !important;
-        display: none !important;
-        transition: all 0.3s ease !important;
-    }
-
-    .student-sidebar.show {
-        display: block !important;
-    }
-
-    .student-sidebar h4 {
-        font-size: 16px !important;
-        margin-bottom: 24px !important;
-        color: #bbb !important;
-        letter-spacing: 0.5px !important;
-    }
-
-    .student-sidebar a {
-        display: block !important;
-        color: white !important;
-        text-decoration: none !important;
-        margin-bottom: 12px !important;
-        font-size: 15px !important;
-        padding: 10px 16px !important;
-        border-radius: 8px !important;
-        transition: all 0.2s ease !important;
-    }
-
-    .student-sidebar a:hover {
-        background-color: #f1f1f1 !important;
-        color: #111;
-        transform: translateX(4px);
-    }
-
-    /* ==== Main Content ==== */
-    .main-content {
-        margin-left: 0 !important;
-        padding: 100px 40px 40px !important;
-        flex-grow: 1 !important;
-        background: #f9f9f9 !important;
-        transition: margin-left 0.3s ease !important;
-    }
-
-    .student-sidebar.show ~ .main-content,
-    .main-content.sidebar-shifted {
-        margin-left: 240px !important;
-    }
-
-    .main-content h2 {
-        margin-bottom: 30px;
-        color: #111;
-    }
-
-    /* Grid */
-
-
-    .grid-container {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-        gap: 24px;
-    }
-
-
-    .card {
-        background: #fff;
-        border-radius: 12px;
-        padding: 24px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.04);
-        border: 1px solid #e5e5e5;
-        transition: all 0.2s ease;
-    }
-
-    .card:hover {
-        box-shadow: 0 6px 14px rgba(0,0,0,0.08);
-        transform: translateY(-4px);
-    }
-
-    .card h5 {
-        font-size: 16px;
-        font-weight: 600;
-        color: #111;
-        margin-bottom: 8px;
-    }
-
-    .card p {
-        font-size: 14px;
-        color: #555;
-    }
-
-    /* ===== ADDITIONAL CARD STYLES ===== */
-    .hover-card {
-        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-    }
-
-    .hover-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
-    }
-
-    .feature-icon {
-        width: 80px;
-        height: 80px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .border-left-primary {
-        border-left: 4px solid #007bff !important;
-    }
-
-    /* ==== Footer ==== */
-    footer {
-        background: #fff;
-        color: #888;
-        text-align: center;
-        padding: 12px 20px;
-        font-size: 13px;
-        border-top: 1px solid #e0e0e0;
-        margin-top: auto;
-    }
-
-    @media (min-width: 769px) {
-        .sidebar.show ~ .main-content + footer {
-            margin-left: 240px;
-        }
-    }
-
-    @media (max-width: 768px) {
-        .main-content {
-            padding: 100px 20px 40px;
-        }
-    }
-
-</style>
 <body>
 <div class="wrapper">
     <header>
-        <div class="menu-toggle">
-            <i class="fas fa-bars" onclick="StudentPanel.toggleSidebar()"></i>
+        <div class="menu-toggle" onclick="toggleSidebar()">
+            <i class="fas fa-bars"></i>
         </div>
         <div class="user-info">
-            <i class="fas fa-user me-2" onclick="StudentPanel.toggleLogoutDropdown()"></i>
+            <i class="fas fa-user me-2" onclick="toggleLogoutDropdown()"></i>
+            <span>Hi, Sinh viên</span>
             <div id="logoutDropdown" class="logout-dropdown">
                 <form th:action="@{/logout}" method="post">
-                    <button type="submit" class="btn btn-sm btn-outline-danger w-100">Đăng xuất</button>
+                    <button type="submit" class="btn btn-sm btn-outline-danger w-100">Logout</button>
                 </form>
             </div>
         </div>
     </header>
 
-    <div class="student-sidebar" id="sidebar">
+    <div class="sidebar" id="sidebar">
         <a th:href="@{/student/dashboard}" class="sidebar-link home-link">
             <i class="fas fa-home me-2"></i>Trang chủ
         </a>
         <a th:href="@{/student/profile}" class="active"><i class="fas fa-user me-2"></i>Tài khoản cá nhân</a>
         <a th:href="@{/student/classes}"><i class="fas fa-chalkboard me-2"></i>Lớp học của tôi</a>
         <a th:href="@{/student/grades}"><i class="fas fa-graduation-cap me-2"></i>Điểm số</a>
-        <a href="#" ><i class="fas fa-calendar-alt me-2"></i>Lịch học </a>
+        <a href="#" onclick="showComingSoon('Lịch học')" class="text-muted"><i class="fas fa-calendar-alt me-2"></i>Lịch học <span class="badge bg-danger ms-1 small">Sắp có</span></a>
     </div>
 
     <div class="main-content">
@@ -430,76 +192,33 @@
 </div>
 
 <script>
-    window.StudentPanel = window.StudentPanel || {};
-
-    StudentPanel.toggleLogoutDropdown = function() {
+    function toggleLogoutDropdown() {
         const dropdown = document.getElementById("logoutDropdown");
         if (dropdown) {
             dropdown.style.display = (dropdown.style.display === "block") ? "none" : "block";
         }
-    };
+    }
 
-    StudentPanel.toggleSidebar = function() {
+    function toggleSidebar() {
         const sidebar = document.getElementById("sidebar");
         if (sidebar) {
             sidebar.classList.toggle("show");
-            // Đồng bộ với main content
-            const mainContent = document.querySelector('.main-content');
-            if (mainContent) {
-                mainContent.classList.toggle('sidebar-shifted');
-            }
-            // Close dropdown if open
-            const dropdown = document.getElementById("logoutDropdown");
-            if (dropdown) {
-                dropdown.style.display = "none";
-            }
         }
-    };
+    }
 
     document.addEventListener("click", function (event) {
         const userInfo = document.querySelector(".user-info");
         const dropdown = document.getElementById("logoutDropdown");
         const sidebar = document.getElementById("sidebar");
-        const menuToggle = document.querySelector(".menu-toggle");
+        const toggle = document.querySelector(".menu-toggle");
 
         if (dropdown && userInfo && !userInfo.contains(event.target)) {
             dropdown.style.display = "none";
         }
 
-        if (sidebar && !sidebar.contains(event.target) && event.target !== menuToggle && !menuToggle.contains(event.target)) {
+        if (sidebar && !sidebar.contains(event.target) && !toggle.contains(event.target)) {
             sidebar.classList.remove("show");
-            // Đồng bộ với main content
-            const mainContent = document.querySelector('.main-content');
-            if (mainContent) {
-                mainContent.classList.remove('sidebar-shifted');
-            }
         }
-    });
-    document.addEventListener("DOMContentLoaded", function() {
-        // Click handler for menu toggle
-        const menuToggle = document.querySelector('.menu-toggle');
-        if (menuToggle) {
-            menuToggle.addEventListener('click', function (e) {
-                e.preventDefault();
-                e.stopPropagation();
-                StudentPanel.toggleSidebar();
-            });
-        }
-
-        // Close sidebar when clicking outside
-        document.addEventListener('click', function(e) {
-            const sidebar = document.getElementById('sidebar');
-            const menuToggle = document.querySelector('.menu-toggle');
-
-            if (sidebar && !sidebar.contains(e.target) &&
-                e.target !== menuToggle && !menuToggle.contains(e.target)) {
-                sidebar.classList.remove('show');
-                const mainContent = document.querySelector('.main-content');
-                if (mainContent) {
-                    mainContent.classList.remove('sidebar-shifted');
-                }
-            }
-        });
     });
 
     // Thêm validation cho form
@@ -555,6 +274,9 @@
         }
     });
 
+    function showComingSoon(feature) {
+        alert("Chức năng '" + feature + "' hiện đang được phát triển. Vui lòng quay lại sau.");
+    }
 </script>
 </body>
 </html>

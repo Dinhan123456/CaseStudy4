@@ -12,7 +12,7 @@ public class Schedule {
     private Long id;
 
     // Lớp học
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinColumn(name = "class_id", nullable = false)
     private Class classEntity;
 

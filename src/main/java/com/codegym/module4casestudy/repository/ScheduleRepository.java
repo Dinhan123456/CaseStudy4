@@ -59,40 +59,7 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
                                                 @Param("timeSlotId") Long timeSlotId,
                                                 @Param("startDate") LocalDate startDate,
                                                 @Param("endDate") LocalDate endDate);
-
-    @Query("""
-        SELECT s FROM Schedule s
-        JOIN FETCH s.classEntity c
-        JOIN FETCH s.subject subj
-        JOIN FETCH s.timeSlot ts
-        LEFT JOIN FETCH s.teacher t
-        LEFT JOIN FETCH s.room r
-        JOIN c.students st
-        WHERE st.id = :studentId
-          AND s.active = true
-          AND s.startDate <= :date
-          AND (s.endDate IS NULL OR s.endDate >= :date)
-    """)
-    List<Schedule> findForStudentOnDateWithJoins(@Param("studentId") Long studentId,
-                                                 @Param("date") LocalDate date);
-
-    @Query("""
-        SELECT s FROM Schedule s
-        JOIN FETCH s.classEntity c
-        JOIN FETCH s.subject subj
-        JOIN FETCH s.timeSlot ts
-        LEFT JOIN FETCH s.teacher t
-        LEFT JOIN FETCH s.room r
-        JOIN c.students st
-        WHERE st.id = :studentId
-          AND s.active = true
-          AND s.startDate <= :endDate
-          AND (s.endDate IS NULL OR s.endDate >= :startDate)
-    """)
-    List<Schedule> findForStudentBetweenWithJoins(@Param("studentId") Long studentId,
-                                                  @Param("startDate") LocalDate startDate,
-                                                  @Param("endDate") LocalDate endDate);
-
+    
     // Kiểm tra trùng lịch lớp học
     @Query("SELECT s FROM Schedule s WHERE s.classEntity.id = :classId AND s.dayOfWeek = :dayOfWeek " +
            "AND s.timeSlot.id = :timeSlotId AND s.active = true " +
@@ -168,9 +135,7 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
                                                @Param("timeSlotId") Long timeSlotId,
                                                @Param("startDate") LocalDate startDate,
                                                @Param("endDate") LocalDate endDate);
-
-
-
+    
     // Phương thức đăng ký sinh viên vào lớp (cần custom implementation)
     @Modifying
     @Query(value = "INSERT INTO class_students (class_id, student_id) " +

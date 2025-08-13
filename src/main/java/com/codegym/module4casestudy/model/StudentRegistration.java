@@ -15,17 +15,17 @@ public class StudentRegistration {
     @JoinColumn(name = "student_id", nullable = false)
     private User student;
 
-    // Lịch học đăng ký
+    // Lịch học đăng ký (có thể null nếu đăng ký theo môn học)
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "schedule_id", nullable = true)
+    @JoinColumn(name = "schedule_id")
     private Schedule schedule;
-
-    // Môn học (đăng ký theo môn, không nhất thiết có lịch ngay)
+    
+    // Môn học đăng ký (có thể null nếu đăng ký theo lịch học)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "subject_id")
     private Subject subject;
-
-    // Lớp học gắn với đăng ký môn (nếu có)
+    
+    // Lớp học (có thể null)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "class_id")
     private Class classEntity;
@@ -98,7 +98,7 @@ public class StudentRegistration {
     public void setSchedule(Schedule schedule) {
         this.schedule = schedule;
     }
-
+    
     public Subject getSubject() {
         return subject;
     }
@@ -106,7 +106,7 @@ public class StudentRegistration {
     public void setSubject(Subject subject) {
         this.subject = subject;
     }
-
+    
     public Class getClassEntity() {
         return classEntity;
     }

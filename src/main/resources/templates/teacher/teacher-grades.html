@@ -17,6 +17,7 @@
         </div>
         <div class="user-info">
             <i class="fas fa-user me-2" onclick="toggleLogoutDropdown()"></i>
+            <span>Hi, Giảng viên</span>
             <div id="logoutDropdown" class="logout-dropdown">
                 <form th:action="@{/logout}" method="post">
                     <button type="submit" class="btn btn-sm btn-outline-danger w-100">Logout</button>
@@ -296,23 +297,47 @@
     function loadGradesByClass() {
         const classId = document.getElementById('classFilter').value;
         if (classId) {
-            // TODO: Load grades by class via AJAX
-            alert("Tính năng đang phát triển!");
+                 fetch(`/teacher/api/grades/class/${classId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        displayGrades(data.grades);
+                        updateStatistics(data.grades);
+                    } else {
+                        alert('Lỗi: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Có lỗi xảy ra khi tải điểm!');
+                });
+        } else {
+            clearGradesTable();
         }
     }
 
     function loadGradesBySubject() {
         const subjectId = document.getElementById('subjectFilter').value;
         if (subjectId) {
-            // TODO: Load grades by subject via AJAX
-            alert("Tính năng đang phát triển!");
+            // Lọc theo môn học từ dữ liệu đã tải
+            filterGradesBySubject(subjectId);
         }
     }
 
     function searchStudents() {
-        const keyword = document.getElementById('studentSearch').value;
-        // TODO: Search students via AJAX
-        console.log("Searching for: " + keyword);
+        const keyword = document.getElementById('studentSearch').value.toLowerCase();
+        const rows = document.querySelectorAll('#gradesTableBody tr');
+        
+        rows.forEach(row => {
+            const studentName = row.cells[2]?.textContent.toLowerCase() || '';
+            const studentCode = row.cells[1]?.textContent.toLowerCase() || '';
+            
+            if (studentName.includes(keyword) || studentCode.includes(keyword)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
     }
 
     function addGrade() {
@@ -321,19 +346,183 @@
             alert("Vui lòng chọn lớp học trước!");
             return;
         }
-        // TODO: Show add grade modal
-        alert("Tính năng đang phát triển!");
+        
+        // Reset form và hiển thị modal
+        document.getElementById('gradeForm').reset();
+        const modal = new bootstrap.Modal(document.getElementById('gradeModal'));
+        modal.show();
     }
 
-    function editGrade(studentId, subjectId) {
-        // TODO: Load and show edit grade modal
+    function editGrade(gradeId) {
+        // Load thông tin điểm và hiển thị modal
+        // TODO: Implement load grade details
         const modal = new bootstrap.Modal(document.getElementById('gradeModal'));
         modal.show();
     }
 
     function saveGrade() {
-        // TODO: Save grade via AJAX
-        alert("Tính năng đang phát triển!");
+        const formData = new FormData();
+        formData.append('studentId', document.getElementById('studentId')?.value || 1);
+        formData.append('subjectId', document.getElementById('subjectFilter').value || 1);
+        formData.append('classId', document.getElementById('classFilter').value);
+        formData.append('attendanceScore', document.getElementById('attendanceScore').value);
+        formData.append('midtermScore', document.getElementById('midtermScore').value);
+        formData.append('finalScore', document.getElementById('finalScore').value);
+        formData.append('assignmentScore', document.getElementById('practicalScore').value);
+        
+        fetch('/teacher/api/grades', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Lưu điểm thành công!');
+                bootstrap.Modal.getInstance(document.getElementById('gradeModal')).hide();
+                loadGradesByClass(); // Reload grades
+            } else {
+                alert('Lỗi: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Có lỗi xảy ra khi lưu điểm!');
+        });
+    }
+
+    function displayGrades(grades) {
+        const tbody = document.getElementById('gradesTableBody');
+        tbody.innerHTML = '';
+        
+        if (grades.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="12" class="text-center text-muted py-5">
+                        <i class="fas fa-clipboard-list fa-3x mb-3"></i><br>
+                        <h5>Chưa có điểm nào</h5>
+                        <p>Nhấn "Nhập điểm" để thêm điểm cho sinh viên.</p>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        
+        grades.forEach((grade, index) => {
+            const avgScore = calculateAverageScore(grade);
+            const grade4 = convertToGrade4(avgScore);
+            const classification = getClassification(avgScore);
+            
+            tbody.innerHTML += `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${grade.student?.username || 'N/A'}</td>
+                    <td>${grade.student?.fullName || 'N/A'}</td>
+                    <td>${grade.classEntity?.name || 'N/A'}</td>
+                    <td>${grade.attendanceScore || 0}</td>
+                    <td>${grade.midtermScore || 0}</td>
+                    <td>${grade.finalScore || 0}</td>
+                    <td>${grade.assignmentScore || 0}</td>
+                    <td><strong>${avgScore.toFixed(2)}</strong></td>
+                    <td>${grade4.toFixed(2)}</td>
+                    <td><span class="badge bg-${getClassificationColor(avgScore)}">${classification}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-primary me-1" onclick="editGrade(${grade.id})">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteGrade(${grade.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    function calculateAverageScore(grade) {
+        const attendance = parseFloat(grade.attendanceScore) || 0;
+        const midterm = parseFloat(grade.midtermScore) || 0;
+        const final = parseFloat(grade.finalScore) || 0;
+        
+        return attendance * 0.1 + midterm * 0.3 + final * 0.6;
+    }
+
+    function convertToGrade4(score) {
+        if (score >= 8.5) return 4.0;
+        if (score >= 7.0) return 3.0;
+        if (score >= 5.5) return 2.0;
+        if (score >= 4.0) return 1.0;
+        return 0.0;
+    }
+
+    function getClassification(score) {
+        if (score >= 8.5) return 'Giỏi';
+        if (score >= 7.0) return 'Khá';
+        if (score >= 5.5) return 'Trung bình';
+        if (score >= 4.0) return 'Yếu';
+        return 'Kém';
+    }
+
+    function getClassificationColor(score) {
+        if (score >= 8.5) return 'success';
+        if (score >= 7.0) return 'primary';
+        if (score >= 5.5) return 'warning';
+        return 'danger';
+    }
+
+    function updateStatistics(grades) {
+        let excellent = 0, good = 0, average = 0, poor = 0;
+        
+        grades.forEach(grade => {
+            const avgScore = calculateAverageScore(grade);
+            if (avgScore >= 8.5) excellent++;
+            else if (avgScore >= 7.0) good++;
+            else if (avgScore >= 5.5) average++;
+            else poor++;
+        });
+        
+        document.getElementById('gradeExcellent').textContent = excellent;
+        document.getElementById('gradeGood').textContent = good;
+        document.getElementById('gradeAverage').textContent = average;
+        document.getElementById('gradePoor').textContent = poor;
+    }
+
+    function clearGradesTable() {
+        document.getElementById('gradesTableBody').innerHTML = `
+            <tr>
+                <td colspan="12" class="text-center text-muted py-5">
+                    <i class="fas fa-clipboard-list fa-3x mb-3"></i><br>
+                    <h5>Vui lòng chọn lớp học để xem điểm</h5>
+                    <p>Sử dụng bộ lọc ở trên để chọn lớp học và môn học cần quản lý điểm.</p>
+                </td>
+            </tr>
+        `;
+        
+        // Reset statistics
+        document.getElementById('gradeExcellent').textContent = '0';
+        document.getElementById('gradeGood').textContent = '0';
+        document.getElementById('gradeAverage').textContent = '0';
+        document.getElementById('gradePoor').textContent = '0';
+    }
+
+    function deleteGrade(gradeId) {
+        if (confirm('Bạn có chắc chắn muốn xóa điểm này?')) {
+            fetch(`/teacher/api/grades/${gradeId}/delete`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Xóa điểm thành công!');
+                    loadGradesByClass(); // Reload grades
+                } else {
+                    alert('Lỗi: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Có lỗi xảy ra khi xóa điểm!');
+            });
+        }
     }
 
     function exportGrades() {
