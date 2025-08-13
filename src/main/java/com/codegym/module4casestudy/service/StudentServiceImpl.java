@@ -69,7 +69,7 @@ public class StudentServiceImpl implements IStudentService {
         
         if (studentDto.getClassId() != null) {
             Optional<Class> class_ = classRepository.findById(studentDto.getClassId());
-            class_.ifPresent(student::setClass_);
+            class_.ifPresent(student::setHomeClass);
         }
         
         return studentRepository.save(student);
@@ -91,7 +91,7 @@ public class StudentServiceImpl implements IStudentService {
             
             if (studentDto.getClassId() != null) {
                 Optional<Class> class_ = classRepository.findById(studentDto.getClassId());
-                class_.ifPresent(student::setClass_);
+                class_.ifPresent(student::setHomeClass);
             }
             
             return studentRepository.save(student);

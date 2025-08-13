@@ -16,7 +16,7 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
     
     List<Student> findByActive(boolean active);
     
-    @Query("SELECT s FROM Student s WHERE s.class_.id = :classId")
+    @Query("SELECT s FROM Student s WHERE s.homeClass.id = :classId")
     List<Student> findByClassId(@Param("classId") Long classId);
     
     @Query("SELECT s FROM Student s WHERE s.studentCode LIKE %:keyword% OR s.fullName LIKE %:keyword% OR s.email LIKE %:keyword%")

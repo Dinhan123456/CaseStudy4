@@ -1,8 +1,9 @@
  package com.codegym.module4casestudy.model;
 
- import javax.persistence.*;
- import java.time.LocalDate;
- import java.util.HashSet;
+import javax.persistence.*;
+import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
  @Entity
  @Table(name = "students")
@@ -32,18 +33,23 @@
      @Enumerated(EnumType.STRING)
      private Gender gender;
 
-     @ManyToOne
-     @JoinColumn(name = "class_id")
-     private Class class_;
+    @ManyToOne
+    @JoinColumn(name = "class_id")
+    private Class homeClass; // lớp chủ quản
 
-     private Boolean active = true;
+    private Boolean active = true;
 
+    // Many-to-Many với Classes (enrollment)
+    @ManyToMany
+    @JoinTable(
+        name = "student_class",
+        joinColumns = @JoinColumn(name = "student_id"),
+        inverseJoinColumns = @JoinColumn(name = "class_id")
+    )
+    private Set<Class> classes = new HashSet<>();
 
-     public enum Gender {
-         MALE, FEMALE, OTHER
-     }
-
-
+    // Enum cho giới tính (khớp với DB: M, F)
+    public enum Gender { M, F }
 
      public Student() {
      }
@@ -128,20 +134,27 @@
          this.gender = gender;
      }
 
-     public Class getClass_() {
-         return class_;
-     }
+    public Class getHomeClass() {
+        return homeClass;
+    }
 
-     public void setClass_(Class class_) {
-         this.class_ = class_;
-     }
+    public void setHomeClass(Class homeClass) {
+        this.homeClass = homeClass;
+    }
 
-     public Boolean getActive() {
-         return active;
-     }
+    public Boolean getActive() {
+        return active;
+    }
 
-     public void setActive(Boolean active) {
-         this.active = active;
-     }
- }
+    public void setActive(Boolean active) {
+        this.active = active;
+    }
 
+    public Set<Class> getClasses() {
+        return classes;
+    }
+
+    public void setClasses(Set<Class> classes) {
+        this.classes = classes;
+    }
+}
