@@ -175,15 +175,26 @@ public class TeacherController {
             teacher.setFullName("Không xác định");
             teacher.setEmail("");
             teacher.setPhone("");
-            
             model.addAttribute("teacher", teacher);
             model.addAttribute("classes", new java.util.ArrayList<>());
             return "teacher/teacher-classes";
         }
 
         try {
-            // Lấy các lớp mà teacher phụ trách
-            List<Class> teachingClasses = classService.findClassesByTeacherId(teacher.getId());
+            // Lấy tất cả lớp có students và teachers (tránh lazy loading exception)
+            List<Class> allClasses = classService.findAllWithStudentsAndTeachers();
+            // Lọc lại các lớp mà teacher phụ trách
+            List<Class> teachingClasses = new java.util.ArrayList<>();
+            for (Class clazz : allClasses) {
+                if (clazz.getTeachers() != null) {
+                    for (com.codegym.module4casestudy.model.User t : clazz.getTeachers()) {
+                        if (t.getId() != null && t.getId().equals(teacher.getId())) {
+                            teachingClasses.add(clazz);
+                            break;
+                        }
+                    }
+                }
+            }
             model.addAttribute("teacher", teacher);
             model.addAttribute("classes", teachingClasses);
         } catch (Exception e) {
